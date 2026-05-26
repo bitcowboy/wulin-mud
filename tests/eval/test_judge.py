@@ -178,6 +178,35 @@ async def test_evaluate_soft_fails_below_threshold() -> None:
     assert not result.passed
 
 
+async def test_evaluate_soft_returns_errored_result_when_provider_raises() -> None:
+    """Provider transport failure → AssertionResult(passed=False, score=None).
+
+    Distinguished from "judge said low" by score=None. This is how
+    the runner decides whether a scenario verdict is FAIL vs ERROR.
+    """
+
+    class BoomProvider:
+        async def generate(self, **kwargs):  # type: ignore[no-untyped-def]
+            raise RuntimeError("simulated transport failure")
+
+    provider = BoomProvider()
+    assertion = SoftAssertion(
+        type=SoftAssertionType.IN_CHARACTER,
+        criterion="x",
+        threshold=3.5,
+    )
+    result = await evaluate_soft(
+        provider=provider,  # type: ignore[arg-type]
+        scenario=_stub_scenario(),
+        assertion=assertion,
+        reply="x",
+    )
+    assert not result.passed
+    assert result.score is None
+    assert "JUDGE UNREACHABLE" in result.detail
+    assert "simulated transport failure" in result.detail
+
+
 async def test_judge_uses_low_temperature() -> None:
     """We want the judge to be consistent, not creative."""
     provider = FakeProvider(default='{"score": 4, "reasoning": "ok"}')

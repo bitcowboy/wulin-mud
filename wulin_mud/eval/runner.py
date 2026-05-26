@@ -67,10 +67,28 @@ class ScenarioResult:
             r.passed for _, r in self.soft_results
         )
 
+    @property
+    def has_judge_errors(self) -> bool:
+        """True iff at least one soft assertion couldn't reach the judge.
+
+        Distinct from "judge gave a low score": the soft result's
+        ``score`` is None only when the provider raised.
+        """
+        return any(r.score is None for _, r in self.soft_results)
+
     def format_report(self) -> str:
+        # Top-line verdict: PASS / FAIL / ERROR.
+        # ERROR means at least one soft assertion couldn't be graded —
+        # the scenario didn't get a real verdict, so don't claim FAIL.
+        if self.passed:
+            verdict = "PASS"
+        elif self.has_judge_errors and not any(not r.passed for _, r in self.hard_results):
+            verdict = "ERROR (judge unreachable — see soft assertion lines)"
+        else:
+            verdict = "FAIL"
         lines = [
             f"=== {self.scenario_id} ({self.npc_id}) ===",
-            "PASS" if self.passed else "FAIL",
+            verdict,
             "",
             "Reply:",
             "  " + self.reply.replace("\n", "\n  "),
@@ -84,7 +102,14 @@ class ScenarioResult:
         if self.soft_results:
             lines.append("Soft assertions:")
             for _soft, result in self.soft_results:
-                mark = "✓" if result.passed else "✗"
+                # ⚠ means errored (judge didn't grade); ✗ means graded
+                # but below threshold; ✓ means passed.
+                if result.score is None:
+                    mark = "⚠"
+                elif result.passed:
+                    mark = "✓"
+                else:
+                    mark = "✗"
                 lines.append(f"  {mark} {result.detail}")
         return "\n".join(lines)
 

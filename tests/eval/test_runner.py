@@ -82,6 +82,37 @@ async def test_initial_state_overrides_apply_to_npc() -> None:
     assert result.passed  # this is the "good cold reply" path
 
 
+async def test_scenario_with_judge_errors_marked_as_error_not_fail() -> None:
+    """If only the judge couldn't be reached (provider raised), the
+    scenario verdict should be ERROR, not FAIL — the persona side
+    still passed."""
+
+    class BoomJudge:
+        async def generate(self, **kwargs):  # type: ignore[no-untyped-def]
+            raise RuntimeError("proxy filtered the request")
+
+    scenario = load_scenario(SUN_POPO_DIR / "scenario_01_first_buy.yaml")
+    dlg = FakeProvider(
+        responses=[
+            "我这有止血膏。八十文一副。",  # Talk reply — clean
+            "新来的小伙子。",  # interpretation
+        ]
+    )
+    result = await run_scenario(scenario, dialogue_llm=dlg, judge_llm=BoomJudge())  # type: ignore[arg-type]
+    # Persona-side passed
+    assert all(r.passed for _, r in result.hard_results)
+    # But soft errored → overall not "passed"
+    assert not result.passed
+    # The new flag distinguishes this from a real persona failure
+    assert result.has_judge_errors
+    # Report top line says ERROR, not FAIL
+    report = result.format_report()
+    assert "ERROR" in report
+    assert "judge unreachable" in report.lower()
+    # And the individual soft line uses the ⚠ marker, not ✗
+    assert "⚠" in report
+
+
 async def test_format_report_renders_pass_and_fail_marks() -> None:
     scenario = load_scenario(SUN_POPO_DIR / "scenario_01_first_buy.yaml")
     dlg = FakeProvider(

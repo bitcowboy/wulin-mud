@@ -116,23 +116,58 @@ class OpenAIProvider:
         temperature: float = 0.7,
         max_tokens: int = 500,
     ) -> str:
+        """Single chat completion with one retry on transient flakes.
+
+        The OpenAI SDK already retries 5xx and rate limits internally.
+        What it does NOT cover and we observed in the wild:
+
+        - 200 OK with ``content`` of empty string (relays running
+          their own content-filter, or models that produced literally
+          nothing before stopping).
+        - Connection errors after the SDK exhausted its own retries.
+
+        Both are treated as one transient flake and retried exactly
+        once with a short backoff. A second failure raises so the
+        eval runner can record the scenario as errored rather than
+        silently passing empty content downstream.
+        """
+        import asyncio
+
+        from openai import APIConnectionError
+
         chosen_model = model if model is not None else self._default_model
-        response = await self._client.chat.completions.create(
-            model=chosen_model,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-        choice = response.choices[0]
-        text = choice.message.content
-        if text is None:
-            raise RuntimeError(
-                f"OpenAI returned empty content. finish_reason={choice.finish_reason!r}"
+
+        async def _attempt() -> str:
+            response = await self._client.chat.completions.create(
+                model=chosen_model,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
-        return text
+            choice = response.choices[0]
+            text = choice.message.content
+            if text is None or not text.strip():
+                raise RuntimeError(
+                    f"OpenAI returned empty/blank content "
+                    f"(finish_reason={choice.finish_reason!r}). "
+                    "This is often a content-filter or proxy issue."
+                )
+            return text
+
+        try:
+            return await _attempt()
+        except (RuntimeError, APIConnectionError) as first_exc:
+            # One short backoff, then retry. If we still fail, raise.
+            await asyncio.sleep(0.5)
+            try:
+                return await _attempt()
+            except (RuntimeError, APIConnectionError) as second_exc:
+                raise RuntimeError(
+                    f"OpenAI call failed twice: first={first_exc}; second={second_exc}"
+                ) from second_exc
 
 
 # ---------------------------------------------------------------------------

@@ -168,25 +168,51 @@ async def evaluate_soft(
     reply: str,
     model: str | None = None,
 ) -> AssertionResult:
-    """Run one soft assertion. Returns pass/fail relative to threshold."""
+    """Run one soft assertion. Returns pass/fail relative to threshold.
+
+    Distinguishes three outcomes:
+
+    - **Pass** — judge scored ≥ threshold. ``score`` is the integer
+      grade (as a float for the dataclass).
+    - **Fail (parsed)** — judge scored below threshold. Same shape.
+    - **Errored** — provider raised (after its own internal retry).
+      Returns ``passed=False`` with ``score=None`` so the report can
+      visually distinguish "judge thought it was bad" from "judge
+      never gave us an answer". The detail line names the exception.
+
+    The errored case is *not* the persona's fault — typically it's a
+    proxy / content-filter / network issue.
+    """
     user = _build_judge_user(scenario=scenario, assertion=assertion, reply=reply)
     chosen_model = model if model is not None else os.environ.get("WULIN_MODEL_JUDGE")
-    raw = await provider.generate(
-        system=_JUDGE_SYSTEM_PROMPT,
-        user=user,
-        model=chosen_model,
-        temperature=_JUDGE_TEMPERATURE,
-        max_tokens=_JUDGE_MAX_TOKENS,
-    )
+    try:
+        raw = await provider.generate(
+            system=_JUDGE_SYSTEM_PROMPT,
+            user=user,
+            model=chosen_model,
+            temperature=_JUDGE_TEMPERATURE,
+            max_tokens=_JUDGE_MAX_TOKENS,
+        )
+    except Exception as exc:
+        return AssertionResult(
+            passed=False,
+            detail=(
+                f"[{assertion.type.value}] JUDGE UNREACHABLE — "
+                f"{type(exc).__name__}: {exc}. "
+                "This is a tooling issue (proxy, network, content filter), "
+                "not a verdict on the reply."
+            ),
+            score=None,
+        )
+
     parsed = _parse_judge_output(raw)
     passed = parsed.score >= assertion.threshold
     detail = (
         f"[{assertion.type.value}] score={parsed.score}/5 "
         f"(threshold {assertion.threshold}). reasoning: {parsed.reasoning}"
     )
-    # If parsing failed entirely (score=0), surface the raw output
-    # so the user can see what the judge actually produced. Cap at
-    # 400 chars to keep reports readable.
+    # If parsing failed (score=0), surface the raw output so the
+    # user can see what the judge actually produced. Cap at 400 chars.
     if parsed.score == 0:
         snippet = parsed.raw[:400] + ("…" if len(parsed.raw) > 400 else "")
         detail += f"\n     raw judge output: {snippet!r}"
