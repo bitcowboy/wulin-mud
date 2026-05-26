@@ -34,7 +34,7 @@
 
 ```bash
 # 1. 克隆并进入
-git clone <repo-url> && cd wulin-mud
+git clone https://github.com/bitcowboy/wulin-mud.git && cd wulin-mud
 
 # 2. 安装依赖（需要 Python 3.11+）
 pip install -e ".[dev]"
@@ -120,7 +120,7 @@ See [`docs/world-setting.md`](docs/world-setting.md).
 ### Quick start
 
 ```bash
-git clone <repo-url> && cd wulin-mud
+git clone https://github.com/bitcowboy/wulin-mud.git && cd wulin-mud
 pip install -e ".[dev]"
 cp .env.example .env  # set OPENAI_API_KEY
 python -m wulin_mud.scripts.seed_world
