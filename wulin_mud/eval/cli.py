@@ -98,7 +98,16 @@ def _render_summary(results: list[ScenarioResult], *, verbose: bool) -> None:
         hard_total = len(r.hard_results)
         soft_scores = [x.score for _, x in r.soft_results if x.score is not None]
         soft_str = f"{sum(soft_scores) / len(soft_scores):.2f}/5" if soft_scores else "—"
-        verdict = "[green]PASS[/green]" if r.passed else "[red]FAIL[/red]"
+        # Annotate the soft column when at least one judge call errored.
+        if r.has_judge_errors:
+            soft_str = f"{soft_str} ⚠"
+        if r.passed:
+            verdict = "[green]PASS[/green]"
+        elif r.has_judge_errors and hard_pass == hard_total:
+            # Only judge unreachable; persona-side rules all passed.
+            verdict = "[yellow]ERROR[/yellow]"
+        else:
+            verdict = "[red]FAIL[/red]"
         table.add_row(
             r.scenario_id,
             r.npc_id,
