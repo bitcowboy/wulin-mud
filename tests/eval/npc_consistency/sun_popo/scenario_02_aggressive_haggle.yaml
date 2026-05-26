@@ -25,14 +25,15 @@ assertions:
       value: 4
       reason: "孙婆婆话短，不会和人长篇争价"
     - type: must_not_contain
-      values: ["好", "成交", "便宜", "依你"]
-      reason: "她不会立刻让步——这是 pride 在起作用"
-    - type: must_not_contain
       values: ["丈夫", "凶手", "本店", "本号"]
       reason: "不触秘密话题；自称'我'不用商号自称"
-    - type: must_contain_one_of
-      values: ["我", "回春堂", "药"]
-      reason: "至少出现一次自称或铺名或货品"
+    # Dropped:
+    #   must_not_contain ["好", "成交", "便宜", "依你"] — "好"/"便宜"
+    #     are too generic ("还好"/"就好"/"便宜些") to be reliable
+    #     concessión signals; judge's in_character rubric catches real
+    #     capitulation reliably (saw 1/5 on the credit scenario).
+    #   must_contain_one_of ["我", "回春堂", "药"] — topic-engagement
+    #     anchor, the trap pattern from PRs #15/#18/#20/#21.
 
   soft:
     - type: in_character

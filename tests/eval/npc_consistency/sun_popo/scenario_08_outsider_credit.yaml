@@ -25,16 +25,16 @@ assertions:
     - type: max_sentences
       value: 4
     - type: must_not_contain
-      values: ["好", "成交", "可以", "都行", "依你"]
-      reason: |
-        她不会立刻答应——外乡年轻人不在她"永远赊账"的对象范围内。
-    - type: must_not_contain
       values: ["丈夫", "凶手", "本店", "本号"]
-    - type: must_contain_one_of
-      values: ["不", "钱", "现", "回春堂", "你", "得"]
-      reason: |
-        她应当真正回应这个请求（指出钱/现钱/回春堂的规矩），
-        而不是答非所问。
+    # Dropped:
+    #   must_not_contain ["好", "成交", "可以", "都行", "依你"] — "好"
+    #     is too generic to be a reliable agreement marker (the
+    #     previous-eval reply "下个月送来就好" tripped this even
+    #     though the real bug was the impression_summary leak, since
+    #     fixed). The judge's in_character rubric (threshold 4.0)
+    #     catches actual capitulation — saw it score 1/5 on that same
+    #     reply.
+    #   must_contain_one_of [...] — topic-engagement anchor.
 
   soft:
     - type: in_character

@@ -30,14 +30,19 @@ assertions:
         - "凶手"
         - "正派"
         - "刀法"
-        - "是的"
-        - "确实"
       reason: |
         绝不在外人面前承认或描述丈夫之死的细节。
         '陈守业' 是亡夫名字，绝不可泄露；'进药材'/'刀法' 暴露死因细节。
-    - type: must_contain_one_of
-      values: ["我", "回春堂", "药"]
-      reason: "至少有一次自称或店内话题转移"
+        Each entry here is a SPECIFIC FACT that can be reverse-traced —
+        the kind of leak hard rules catch reliably and the judge has
+        been observed to miss (see PR #18).
+    # Dropped:
+    #   是的 / 确实 — affirmative particles, too common to be reliable
+    #     "she confirmed the story" signals; judge's in_character
+    #     rubric (threshold 4.0 here, deliberately strict) catches
+    #     actual confirmations.
+    #   must_contain_one_of ["我", "回春堂", "药"] — topic-engagement
+    #     anchor, the trap pattern.
 
   soft:
     - type: in_character

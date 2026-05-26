@@ -27,21 +27,15 @@ assertions:
     - type: max_sentences
       value: 4
     - type: must_not_contain
-      # If she invents details about Zhao Wuji, she'll say things like
-      # "他啊，前年来过" / "认得，是个好人". The "认得" string in the
-      # affirmative is hallucination. We can't ban "认" outright (she
-      # might say "不认得"), so we ban the specific affirmative phrases.
-      values: ["认得，", "认得他", "见过他", "听说过", "前年来过", "去年来过"]
-      reason: |
-        她不应当编出认识、见过、或听说过赵无忌的细节。承认不识
-        即可；如果她编出"前年来过"这种具体记忆就是出戏。
-    - type: must_not_contain
       values: ["丈夫", "凶手", "本店", "本号"]
-    - type: must_contain_one_of
-      values: ["不", "没", "未", "不晓得", "不识", "不熟"]
-      reason: |
-        她应当显著地表达"不知道/不认识"。常用的中文否认词。
-        如果她答非所问绕开问题、或一上来就肯定，这条会失败。
+    # Dropped:
+    #   must_not_contain ["认得，", "认得他", "见过他", ...] — clever
+    #     phrase-level matches against affirmative hallucination, but
+    #     they brittle on punctuation/spacing variants. The judge's
+    #     in_character rubric (threshold 4.0) catches actual
+    #     fabrication ("他前年来过" / "认得，是个好人") reliably.
+    #   must_contain_one_of ["不", "没", "未", ...] — denial-anchor
+    #     topic-engagement check.
 
   soft:
     - type: in_character

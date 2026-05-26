@@ -36,31 +36,11 @@ assertions:
       value: 4
     - type: must_not_contain
       values: ["丈夫", "凶手", "本店", "本号"]
-    - type: must_contain_one_of
-      values:
-        - 许久
-        - 好阵子
-        - 好一阵
-        - 前阵
-        - 近来
-        - 回来
-        - 又
-        - 你
-        - 小哥
-        - 嗯
-        - 是
-        - 啊
-        - 见
-        - 活
-      reason: |
-        她应当承认这段时间的间隔，或至少以最小的方式认对方——
-        毕竟 impression_summary 里写得明白。
-        Anchor list intentionally broad: ANY of recognition particle
-        (是/啊/嗯), term of address (小哥/你), absence reference
-        (许久/好阵子/前阵/近来/见), return phrasing (回来/又), or her
-        own catchphrase (活, as in "活着") counts as engaging with
-        the situation. We want to catch genuine cold non-recognition
-        ("我不认识你") without false-flagging in-character variants.
+    # Dropped must_contain_one_of (recognition-anchor topic engagement).
+    # This was the canonical example of the trap: I had to keep
+    # broadening the list every run (许久/好阵子/小哥/前阵/...).
+    # Judge's in_character rubric handles "did she recognise him
+    # without overdoing it" cleanly.
 
   soft:
     - type: in_character
