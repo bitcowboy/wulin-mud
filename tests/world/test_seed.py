@@ -116,6 +116,77 @@ def test_pharmacy_items_yaml_loads() -> None:
     assert sxg.location_id == "loc_huichun_pharmacy"
 
 
+def test_all_five_core_npcs_seed_and_relationships_are_symmetric(tmp_path: Path) -> None:
+    """The 5 v0.1 core NPCs all load, and the bidirectional relationship
+    check passes between every pair that names the other."""
+    db_url = f"sqlite:///{tmp_path / 'five.db'}"
+    assert main(db_url=db_url) == 0
+    from sqlmodel import select
+
+    from wulin_mud.world.persistence import NpcRow, RelationshipRow
+
+    engine = get_engine(db_url=db_url)
+    with Session(engine) as s:
+        ids = sorted(r.id for r in s.exec(select(NpcRow)).all())
+        assert ids == sorted(
+            [
+                "npc_liu_niangzi",
+                "npc_shen_xiansheng",
+                "npc_sun_popo",
+                "npc_wang_laojiu",
+                "npc_zhao_zhanggui",
+            ]
+        )
+
+        # Every (A → B) edge between two loaded NPCs must have a (B → A) mirror.
+        loaded = set(ids)
+        edges = {(r.from_npc_id, r.other_id) for r in s.exec(select(RelationshipRow)).all()}
+        for a, b in edges:
+            if a in loaded and b in loaded:
+                assert (b, a) in edges, f"missing mirror edge: {b} → {a} (have {a} → {b})"
+
+
+def test_owned_locations_reference_real_npcs(tmp_path: Path) -> None:
+    """Each Location's owner_npc_id, if set, must match a seeded NPC."""
+    db_url = f"sqlite:///{tmp_path / 'owners.db'}"
+    assert main(db_url=db_url) == 0
+    from sqlmodel import select
+
+    from wulin_mud.world.persistence import NpcRow
+
+    engine = get_engine(db_url=db_url)
+    with Session(engine) as s:
+        npc_ids = {r.id for r in s.exec(select(NpcRow)).all()}
+        rows = s.exec(select(LocationRow)).all()
+        for loc in rows:
+            if loc.owner_npc_id is not None:
+                assert (
+                    loc.owner_npc_id in npc_ids
+                ), f"location {loc.id} owned by {loc.owner_npc_id!r} which is not seeded"
+
+
+def test_each_npc_in_its_owned_location(tmp_path: Path) -> None:
+    """Sanity: every NPC who owns a Location should be present at that Location
+    (so the player walks in and finds them home)."""
+    db_url = f"sqlite:///{tmp_path / 'home.db'}"
+    assert main(db_url=db_url) == 0
+    from sqlmodel import select
+
+    from wulin_mud.world.persistence import NpcRow
+
+    engine = get_engine(db_url=db_url)
+    with Session(engine) as s:
+        locs = s.exec(select(LocationRow)).all()
+        for loc in locs:
+            if loc.owner_npc_id is None:
+                continue
+            owner = s.get(NpcRow, loc.owner_npc_id)
+            assert owner is not None
+            assert (
+                owner.current_location_id == loc.id
+            ), f"{owner.id} owns {loc.id} but lives at {owner.current_location_id}"
+
+
 def test_locations_yaml_root_must_be_a_list(tmp_path: Path) -> None:
     """Catch schema drift — a mapping at the root is a common mistake."""
     bad = tmp_path / "bad.yaml"

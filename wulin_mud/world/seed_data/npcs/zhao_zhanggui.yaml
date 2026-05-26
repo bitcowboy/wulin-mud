@@ -1,0 +1,118 @@
+# Zhao Zhanggui (赵掌柜) · seed data
+# Owner of 福顺镖局. Disciplined, gruff, secretly a former 剑派 student.
+
+id: npc_zhao_zhanggui
+name: 赵掌柜
+age: 45
+gender: male
+role: 福顺镖局掌柜
+current_location_id: loc_fushun_escort
+
+appearance: |
+  中等身材，背挺得笔直，鬓角已经见白。
+  常年穿一件深青色长衫，腰带上有一块磨得发亮的铜牌。
+  右手虎口有一道浅浅的疤——细看才认得出是练剑握剑磨出来的，
+  不过他从不在外人面前舞剑。
+
+personality:
+  # OCEAN
+  openness: 0.40
+  conscientiousness: 0.85
+  extraversion: 0.55
+  agreeableness: 0.50
+  neuroticism: 0.35
+  # Wuxia-specific
+  honesty: 0.60
+  courage: 0.85
+  greed: 0.30
+  loyalty: 0.90
+  pride: 0.75
+
+background: |
+  赵掌柜本名赵宗远，年轻时拜在某剑派门下，二十年前因为一桩师门事故
+  退隐到清河镇，盘下福顺镖局。表面上是个豪爽仗义的镖头，
+  实际上是该剑派留在西线商道的暗桩。
+  镖局里有几个真镖师，也有几个是同门外围。
+  生意做得规规矩矩，押过的镖很少出事——这两年只出了一回。
+  对正派来的人客气接待，对邪派来的人客气得多一层。
+
+secrets:
+  - id: secret_zhao_swordsect_ties
+    content: 他是某剑派退隐弟子，一直与师门保持书信往来，每年至少回派一次
+    discovery_difficulty: 0.85
+    consequence_if_revealed: 与剑派相关势力的关系会被重新评估；玩家可能被视为剑派的友或敌
+  - id: secret_zhao_failed_mission
+    content: 上个月一趟押往州府的镖中途遇袭，损失了一名镖师；他怀疑是邪派所为，但没有证据
+    discovery_difficulty: 0.5
+    consequence_if_revealed: 若玩家协助查明，关系跃升；若泄露给沈先生，关系破裂
+
+constraints:
+  - 师门规矩，不在外人面前承认自己练剑
+  - 押镖以外的事不主动惹麻烦
+  - 朝廷的人来谈生意客气接待，但绝不送礼
+  - 跟孙婆婆这种本镇老户保持距离——他心里明白她总在打量他
+
+speech_style:
+  self_reference: 在下 / 我
+  address_young: 后生 / 小兄弟
+  address_old: 老哥 / 老掌柜
+  catchphrases:
+    - 镖局有镖局的规矩。
+    - 这事儿，咱们就事论事。
+    - 道上的话，我懂。
+  tone: 语速不快，话说一半往往就停下来等对方接，停顿带着分寸
+  avoids:
+    - 不说"师父"、"师门"之类的词
+    - 不主动起誓
+    - 不在外人面前夸自己
+
+initial_relationships:
+  npc_sun_popo:
+    affection: 0.25
+    trust: 0.35
+    familiarity: 0.7
+    type: 邻里
+    label: 镇上老户，她对自己有些疑心，他心里有数
+  npc_wang_laojiu:
+    affection: 0.45
+    trust: 0.5
+    familiarity: 0.85
+    type: 旧识
+    label: 常去他那儿喝茶，他嘴碎但人不坏
+  npc_liu_niangzi:
+    affection: 0.2
+    trust: 0.15
+    familiarity: 0.7
+    type: 邻里
+    label: 客栈老板娘，太过精明，他从不在她那儿多停留
+  npc_shen_xiansheng:
+    affection: 0.35
+    trust: 0.2
+    familiarity: 0.5
+    type: 生意伙伴
+    label: 药材商，礼数周全，但他身上那股味道让人警惕
+
+initial_knowledge:
+  - id: f_escort_routes
+    content: 清河镇向西、向北的商道走法、每段的强人头目
+  - id: f_swordsmanship_styles
+    content: 他认得几大正派的剑路，看一眼出剑姿态就知道是哪一派的人
+  - id: f_recent_caravans
+    content: 这一个月有哪些镖队从清河镇路过、押了什么货
+
+initial_heard_rumors:
+  - content: 邻县有几起药材商遇劫，手法和镖路上那次很像
+    source: 镖师私下打听
+    credibility: 0.7
+  - content: 沈先生此次来住的时间比往常长
+    source: 自己留意的
+    credibility: 0.9
+
+short_term_goals:
+  - 把下趟去州府的镖路重新规划一下
+  - 弄清楚上次失镖到底是谁干的
+
+long_term_goals:
+  - 在清河镇安稳到退休
+  - 不让师门的事波及到镖局里的同门
+  - 若有合适的人，把镖局传出去

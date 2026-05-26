@@ -1,14 +1,17 @@
 # Qinghe Town · seed locations
 #
-# Minimum viable map for v0.1: enough so the player can walk from the
-# arrival point (the pier) to the validated-NPC scene (the pharmacy).
-# More locations get added as more NPCs are seeded.
+# Minimum viable map for the v0.1 core cast.
 #
-# Layout:
+# Layout (main_street is the central hub):
 #
-#     [ pier ] ─── [ main_street ] ─── [ pharmacy ]
-#                       │
-#                       └── [ teahouse ]
+#       [ pier ]
+#           │
+#     [ main_street ] ─── [ pharmacy ]
+#         │   │       ─── [ teahouse ]
+#         │   │       ─── [ escort_agency ]
+#         │   │       ─── [ inn ]
+#         │
+#         (镇衙 / 当铺 / 铁炉 / 赌坊 / 破庙: added in later sprints)
 #
 # All distances are walkable; MoveTo only allows adjacent jumps so the
 # `connected_to` lists fully define the graph.
@@ -33,6 +36,8 @@
     - loc_pier
     - loc_huichun_pharmacy
     - loc_wang_teahouse
+    - loc_fushun_escort
+    - loc_qinghe_inn
 
 - id: loc_huichun_pharmacy
   name: 回春堂
@@ -53,5 +58,30 @@
     王家茶肆。主街中段，五张八仙桌，临窗一桌总是空着。
     王老九自己掌柜兼跑堂，茶价公道，过路客商爱在这里
     打听消息。
+  owner_npc_id: npc_wang_laojiu
+  connected_to:
+    - loc_main_street
+
+- id: loc_fushun_escort
+  name: 福顺镖局
+  type: escort_agency
+  description: |
+    福顺镖局。主街中段偏北，一个不大的院子，
+    院门上挂着"福顺"二字的旧匾。
+    门口常年停着两辆镖车，几个镖师在院里磨刀。
+    赵掌柜的小屋开在院子最里头。
+  owner_npc_id: npc_zhao_zhanggui
+  connected_to:
+    - loc_main_street
+
+- id: loc_qinghe_inn
+  name: 清河客栈
+  type: inn
+  description: |
+    清河客栈。主街东段，两层木楼，门口挂一盏褪色的红灯笼。
+    底层是大堂，几张桌子摆开，外地客商在这儿喝酒吃饭、
+    打听往哪个方向走。柳娘子坐在柜台后面，眼睛不快也不慢
+    扫一下进门的人。
+  owner_npc_id: npc_liu_niangzi
   connected_to:
     - loc_main_street
