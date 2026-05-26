@@ -1,0 +1,27 @@
+# Pre-commit hooks for wulin-mud.
+#
+# Install once with:  pre-commit install
+# Run manually with:  pre-commit run --all-files
+# Bypass (don't):     git commit --no-verify
+#
+# These hooks intentionally only run the fast checks (ruff lint + format).
+# Type checking (mypy) and tests (pytest) are not in the hook — run those
+# manually before pushing (or rely on CI once it's added).
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]

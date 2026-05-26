@@ -200,7 +200,7 @@ class LLMProvider(Protocol):
 
 class OpenAIProvider:
     """Default implementation."""
-    
+
 class FineTunedLocalProvider:
     """For the 8B fine-tuned model (v0.2+)."""
 ```

@@ -18,31 +18,31 @@
 ```python
 class ActionType(ABC):
     """Base class for all action types."""
-    
+
     name: str                        # "BuyItem"
     description: str                 # 给 LLM 看的自然语言说明
-    
+
     # ===== 参数声明 =====
     parameter_schema: dict           # JSON Schema 风格
-    
+
     # ===== 权限 =====
     callable_by: set[str]            # {"player", "npc", "system"}
-    
+
     # ===== 校验 =====
     @abstractmethod
     def validate(self, params: dict, world: WorldState) -> ValidationResult:
         """Pre-condition checks. Returns reason if invalid."""
-    
+
     # ===== 执行 =====
     @abstractmethod
     def execute(
-        self, 
-        params: dict, 
+        self,
+        params: dict,
         world: WorldState,
         actor_id: str,
     ) -> ActionResult:
         """Apply side effects, generate memories, return result."""
-    
+
     # ===== 副作用声明 =====
     @abstractmethod
     def declare_side_effects(self, params: dict) -> SideEffectManifest:
@@ -62,14 +62,14 @@ class ActionType(ABC):
 class SideEffectManifest:
     # 哪些字段可能被改
     mutates_fields: list[str]        # ["NPC.wealth", "NPC.mood", "Item.owner_id"]
-    
+
     # 谁会作为目击者获得 Memory
     witnesses_rule: WitnessesRule    # 同地点所有人 / 指定 NPC 列表 / 派系成员 / ...
-    
+
     # 是否触发 Rumor
     generates_rumor: bool
     rumor_spice: float
-    
+
     # 延迟触发的后续 Action
     triggers_delayed: list[DelayedAction]
 ```
