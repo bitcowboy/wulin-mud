@@ -1,0 +1,30 @@
+# Items in stock at Granny Sun's pharmacy.
+#
+# Prices are in 铜钱. The player starts with 50 文 — so the cheaper
+# items are within reach; the pricier ones require haggling (BuyItem
+# accepts any price up to 2× base_price, so the floor is base_price/2
+# and the ceiling is 2×).
+
+- id: item_zhixue_gao
+  name: 止血膏
+  type: medicine
+  description: 一味疗外伤的膏药。揉碎敷在伤口上能止血。
+  base_price: 80
+  owner_id: npc_sun_popo
+  location_id: loc_huichun_pharmacy
+
+- id: item_diedah_fang
+  name: 跌打药方
+  type: medicine
+  description: 跌打损伤用的方子。回春堂家传的配伍。
+  base_price: 60
+  owner_id: npc_sun_popo
+  location_id: loc_huichun_pharmacy
+
+- id: item_dangshen
+  name: 党参
+  type: medicine
+  description: 一小束晾干的党参。补气用。
+  base_price: 30
+  owner_id: npc_sun_popo
+  location_id: loc_huichun_pharmacy
