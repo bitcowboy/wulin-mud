@@ -15,7 +15,7 @@ initial_state:
     affection: 0.10
     trust: 0.15
     familiarity: 0.30
-    impression_summary: "外乡后生，会还钱，但不熟。"
+    impression_summary: "外乡后生，几次照面，话不多，但不熟。"
 
 player_input: |
   婆婆，我身上钱不够，止血膏先赊给我，下个月我再给你送回来，行么？

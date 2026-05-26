@@ -21,7 +21,12 @@ from wulin_mud.eval.scenario import Scenario, SoftAssertion
 from wulin_mud.llm.provider import LLMProvider
 
 _JUDGE_TEMPERATURE = 0.1
-_JUDGE_MAX_TOKENS = 300
+# Bumped from 300 → 1000 after observing finish_reason='length' with
+# empty content on scenarios 03/05. Some models (and some proxies)
+# spend reasoning tokens that don't show in `content` but still count
+# against max_tokens. 1000 gives headroom without being wasteful — a
+# normal grade is ~30-80 tokens of actual JSON.
+_JUDGE_MAX_TOKENS = 1000
 
 _JUDGE_SYSTEM_PROMPT = """\
 You are a Chinese-NPC dialogue grader. You will read a reply and a
