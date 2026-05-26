@@ -20,13 +20,16 @@ into the persistence layer.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlmodel import Session
 
 from wulin_mud.actions.base import ACTION_REGISTRY, ActionResult, CallerType
 from wulin_mud.core.enums import InitiatedBy
 from wulin_mud.world.state import WorldState
+
+if TYPE_CHECKING:
+    from wulin_mud.llm.provider import LLMProvider
 
 
 class ActionNotFound(KeyError):
@@ -54,8 +57,15 @@ async def execute_action(
     initiated_by: InitiatedBy,
     llm_reasoning: str | None = None,
     now: float | None = None,
+    llm: LLMProvider | None = None,
 ) -> ActionResult:
-    """Run one action end-to-end in a single DB transaction."""
+    """Run one action end-to-end in a single DB transaction.
+
+    ``llm`` is the provider used to fill Memory.interpretation on any
+    witness Memory the action emits. Tests pass a FakeProvider;
+    production passes an OpenAIProvider. Pass ``None`` only when no
+    Memory rows are expected (e.g. for movement-only or read-only flows).
+    """
     action = ACTION_REGISTRY.get(action_name)
     if action is None:
         raise ActionNotFound(action_name)
@@ -64,7 +74,13 @@ async def execute_action(
     if caller not in action.callable_by:
         raise ActionCallerNotPermitted(f"action {action_name!r} not callable by {caller.value!r}")
 
-    world = WorldState(session, now=now, initiated_by=initiated_by, llm_reasoning=llm_reasoning)
+    world = WorldState(
+        session,
+        now=now,
+        initiated_by=initiated_by,
+        llm_reasoning=llm_reasoning,
+        llm=llm,
+    )
 
     # ----- 1. Validate -----
     validation = action.validate(params, world, actor_id)

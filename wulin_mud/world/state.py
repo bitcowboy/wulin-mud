@@ -24,11 +24,14 @@ from __future__ import annotations
 import time
 import uuid
 from collections.abc import Iterable, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlmodel import Session, select
 
 from wulin_mud.core.enums import EventType, InitiatedBy, WitnessesRule
+
+if TYPE_CHECKING:
+    from wulin_mud.llm.provider import LLMProvider
 from wulin_mud.ontology import (
     NPC,
     PLAYER_ID,
@@ -78,11 +81,23 @@ class WorldState:
         now: float | None = None,
         initiated_by: InitiatedBy = InitiatedBy.PLAYER_INPUT,
         llm_reasoning: str | None = None,
+        llm: LLMProvider | None = None,
     ) -> None:
         self._session = session
         self._now = now if now is not None else time.time()
         self._initiated_by = initiated_by
         self._llm_reasoning = llm_reasoning
+        self._llm = llm
+
+    @property
+    def llm(self) -> LLMProvider | None:
+        """The LLM provider attached to the in-flight action, if any.
+
+        ``None`` means no LLM is available — record_witnessed_event will
+        write Memory rows with empty interpretation (test convenience).
+        Production action runs always inject one.
+        """
+        return self._llm
 
     @property
     def initiated_by(self) -> InitiatedBy:
@@ -208,7 +223,7 @@ class WorldState:
     def save_action_record(self, record: ActionRecord) -> None:
         self._session.merge(action_record_to_row(record))
 
-    def record_witnessed_event(
+    async def record_witnessed_event(
         self,
         *,
         witnesses: Sequence[str],
@@ -222,29 +237,65 @@ class WorldState:
     ) -> list[str]:
         """Generate one Memory row per witness for an objective event.
 
-        ``interpretation`` is intentionally left empty here — that field
-        is the LLM's responsibility (see docs/ontology.md §2.3, "为什么
-        interpretation 要固化"). For v0.1 day 4-7 the executor writes
-        Memory stubs; the LLM layer fills `interpretation` when it
-        lands. Once set, the write-once invariant on Memory enforces
-        immutability.
+        If this WorldState has an ``llm`` provider attached, each
+        Memory's ``interpretation`` field is filled synchronously from
+        the witness's POV before the row is saved. The first element of
+        ``participants`` is treated as the prime mover (the "actor"
+        relative to whom relationship context is shown in the prompt).
+
+        If no provider is attached, interpretations are left empty —
+        this is the test convenience path; the write-once invariant
+        means production code that fills interpretation later can still
+        do so exactly once. See docs/ontology.md §2.3 and
+        docs/architecture.md red line #2.
 
         Returns the list of new Memory IDs (in witness order).
         """
+        from wulin_mud.llm.interpretation import generate_interpretation
+
+        raw_facts_dict = dict(raw_facts or {})
+        participants_list = list(participants)
+        tags_list = list(tags)
+        actor_id = participants_list[0] if participants_list else ""
+
         ids: list[str] = []
-        for npc_id in witnesses:
+        for witness_id in witnesses:
+            interpretation = ""
+            if self._llm is not None:
+                witness_npc = self.get_npc(witness_id)
+                if witness_npc is not None:
+                    draft = Memory(
+                        id="mem_draft",
+                        timestamp=self._now,
+                        event_type=event_type,
+                        participants=participants_list,
+                        location_id=location_id,
+                        raw_facts=raw_facts_dict,
+                        npc_id=witness_id,
+                        interpretation="",
+                        emotional_charge=base_emotional_charge,
+                        importance=base_importance,
+                        tags=tags_list,
+                    )
+                    interpretation = await generate_interpretation(
+                        provider=self._llm,
+                        npc=witness_npc,
+                        memory=draft,
+                        actor_id=actor_id,
+                    )
+
             mem = Memory(
                 id=_new_memory_id(),
                 timestamp=self._now,
                 event_type=event_type,
-                participants=list(participants),
+                participants=participants_list,
                 location_id=location_id,
-                raw_facts=dict(raw_facts or {}),
-                npc_id=npc_id,
-                interpretation="",
+                raw_facts=raw_facts_dict,
+                npc_id=witness_id,
+                interpretation=interpretation,
                 emotional_charge=base_emotional_charge,
                 importance=base_importance,
-                tags=list(tags),
+                tags=tags_list,
             )
             self.save_memory(mem)
             ids.append(mem.id)
