@@ -23,6 +23,7 @@ from wulin_mud.world.persistence import (
     save_npc,
 )
 from wulin_mud.world.state import WorldState
+from wulin_mud.world.tick import TickResult, run_tick
 
 __all__ = [
     "DEFAULT_DB_URL",
@@ -35,10 +36,12 @@ __all__ = [
     "PlayerStateRow",
     "RelationshipRow",
     "RumorRow",
+    "TickResult",
     "WorldState",
     "get_engine",
     "init_db",
     "list_npc_ids",
     "load_npc",
+    "run_tick",
     "save_npc",
 ]

@@ -6,7 +6,15 @@ can resolve them by name.
 """
 
 # Side-effect imports: each module registers its Action into ACTION_REGISTRY.
-from wulin_mud.actions import buy_item, greet, move_to, offend_npc, talk  # noqa: F401
+from wulin_mud.actions import (  # noqa: F401
+    buy_item,
+    decay_memories,
+    drift_mood,
+    greet,
+    move_to,
+    offend_npc,
+    talk,
+)
 from wulin_mud.actions.base import (
     ACTION_REGISTRY,
     ActionResult,

@@ -231,23 +231,31 @@ class WorldState:
         *,
         top_n: int = 10,
         query_tags: Sequence[str] = (),
+        include_archived: bool = False,
     ) -> list[Memory]:
         """Return the top-N memories belonging to ``npc_id``, ranked by
-        importance × recency × tag_relevance (see
+        importance × tag_relevance (see
         :mod:`wulin_mud.world.memory_retrieval`).
 
-        Pure read — does NOT update last_recalled_at. Call
+        Memories tagged :data:`ARCHIVED_TAG` (importance decayed below
+        :data:`IMPORTANCE_FLOOR` during a tick) are excluded by default.
+        They remain in the DB for forensics; pass
+        ``include_archived=True`` to see them.
+
+        Pure read — does NOT update ``last_recalled_at``. Call
         :meth:`mark_memories_recalled` if the memory is being used in
-        a prompt and should decay slower from this point on.
+        a prompt and should be protected from the next tick's decay.
         """
-        from wulin_mud.world.memory_retrieval import score_memory
+        from wulin_mud.world.memory_retrieval import ARCHIVED_TAG, score_memory
 
         rows = self._session.exec(select(MemoryRow).where(MemoryRow.npc_id == npc_id)).all()
         memories = [row_to_memory(r) for r in rows]
+        if not include_archived:
+            memories = [m for m in memories if ARCHIVED_TAG not in m.tags]
         if not memories:
             return []
         memories.sort(
-            key=lambda m: score_memory(m, now=self._now, query_tags=query_tags),
+            key=lambda m: score_memory(m, query_tags=query_tags),
             reverse=True,
         )
         return memories[:top_n]
@@ -283,6 +291,94 @@ class WorldState:
                 break
         recent.reverse()  # oldest first
         return recent
+
+    # ------------------------------------------------------------------
+    # Bulk operations used by system (tick) actions
+    # ------------------------------------------------------------------
+
+    def decay_memories_bulk(self, *, tick_dt_game_days: float) -> dict[str, int]:
+        """Apply one tick of decay to every Memory in the DB.
+
+        Per docs/ontology.md §2.3:
+        - importance *= exp(-decay_rate * tick_dt_game_days)
+        - Memories recalled within the current tick window
+          (last_recalled_at >= now - tick_dt) skip decay this tick.
+        - Memories whose new importance drops below IMPORTANCE_FLOOR
+          get tagged ARCHIVED_TAG and are excluded from default
+          retrieval going forward.
+
+        Returns a stats dict for the caller (action) to put on its
+        ActionRecord.side_effects_applied.
+        """
+        import math
+
+        from wulin_mud.world.memory_retrieval import ARCHIVED_TAG, IMPORTANCE_FLOOR
+
+        if tick_dt_game_days < 0:
+            raise ValueError("tick_dt_game_days must be non-negative")
+        tick_dt_seconds = tick_dt_game_days * 86_400.0
+        rows = self._session.exec(select(MemoryRow)).all()
+        decayed = 0
+        protected = 0
+        archived = 0
+        for row in rows:
+            if ARCHIVED_TAG in row.tags:
+                continue
+            if (
+                row.last_recalled_at is not None
+                and tick_dt_seconds > 0
+                and (self._now - row.last_recalled_at) <= tick_dt_seconds
+            ):
+                protected += 1
+                continue
+            factor = math.exp(-row.decay_rate * tick_dt_game_days)
+            row.importance = row.importance * factor
+            decayed += 1
+            if row.importance < IMPORTANCE_FLOOR:
+                row.tags = [*row.tags, ARCHIVED_TAG]
+                archived += 1
+            self._session.add(row)
+        return {"decayed": decayed, "protected_by_recall": protected, "archived": archived}
+
+    def drift_mood_bulk(
+        self,
+        *,
+        alpha: float = 0.1,
+        target_arousal: float = 0.3,
+    ) -> dict[str, int]:
+        """Apply one tick of mood drift to every NPC.
+
+        Per docs/architecture.md §4: "NPC 心情漂移：基于性格的基线和最近事件，
+        每个 NPC 的 mood 向其稳态回归..."
+
+        v0.1 model:
+          target_valence = 0.3 × (extraversion - neuroticism)
+          target_arousal = 0.3 (constant; later sprints will derive it
+                                from personality + recent events)
+          new = old + alpha × (target - old)        // alpha=0.1
+
+        Returns a stats dict (count of NPCs moved).
+        """
+        from wulin_mud.world.persistence import row_to_npc
+
+        if not (0.0 < alpha <= 1.0):
+            raise ValueError("alpha must be in (0, 1]")
+
+        rows = self._session.exec(select(NpcRow)).all()
+        moved = 0
+        for row in rows:
+            npc = row_to_npc(row)
+            p = npc.personality
+            target_valence = 0.3 * (p.extraversion - p.neuroticism)
+            new_valence = npc.mood.valence + alpha * (target_valence - npc.mood.valence)
+            new_arousal = npc.mood.arousal + alpha * (target_arousal - npc.mood.arousal)
+            # clamp to valid ranges
+            new_valence = max(-1.0, min(1.0, new_valence))
+            new_arousal = max(0.0, min(1.0, new_arousal))
+            row.mood = {"valence": new_valence, "arousal": new_arousal}
+            self._session.add(row)
+            moved += 1
+        return {"moved": moved}
 
     def mark_memories_recalled(
         self, memory_ids: Iterable[str], *, at_time: float | None = None

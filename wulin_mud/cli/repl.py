@@ -55,6 +55,7 @@ HELP_TEXT = """\
   /greet [<姓名>]        打招呼
   /buy <物品> [<价钱>]   买东西（默认按基础价）
   /offend <姓名> [<事>]  冒犯某人
+  /tick [<次数>]         手动让世界走一段时间（心情/记忆衰减）
   /help                  显示帮助
   /quit                  退出
 
@@ -271,6 +272,47 @@ class Repl:
     async def cmd_quit(self, _args: list[str]) -> RenderedTurn:
         raise Quit()
 
+    async def cmd_tick(self, args: list[str]) -> RenderedTurn:
+        """Run one world tick: mood drift + memory decay.
+
+        Optional first arg: how many ticks to fire in sequence
+        (default 1, max 100 to avoid runaway).
+        """
+        n = 1
+        if args:
+            try:
+                n = int(args[0])
+            except ValueError:
+                return RenderedTurn(output=f"{args[0]!r} 不是个整数。")
+            if n < 1:
+                return RenderedTurn(output="次数要 ≥ 1。")
+            if n > 100:
+                return RenderedTurn(output="一次最多跑 100 个 tick。")
+
+        from wulin_mud.world.tick import run_tick
+
+        decay_total = 0
+        protected_total = 0
+        archived_total = 0
+        moods_moved = 0
+        for _ in range(n):
+            result = await run_tick(session=self._session)
+            for fx in result.decay_memories.side_effects_applied:
+                decay_total += int(fx.get("decayed", 0))
+                protected_total += int(fx.get("protected_by_recall", 0))
+                archived_total += int(fx.get("archived", 0))
+            for fx in result.drift_mood.side_effects_applied:
+                moods_moved += int(fx.get("moved", 0))
+
+        return RenderedTurn(
+            output=(
+                f"时间走了 {n} 个 tick。\n"
+                f"  心情漂移：{moods_moved} 个 NPC\n"
+                f"  记忆衰减：{decay_total} 条；被想起跳过 {protected_total} 条；"
+                f"归档 {archived_total} 条"
+            )
+        )
+
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
@@ -319,6 +361,7 @@ class Repl:
             "greet": Repl.cmd_greet,
             "offend": Repl.cmd_offend,
             "buy": Repl.cmd_buy,
+            "tick": Repl.cmd_tick,
             "help": Repl.cmd_help,
             "quit": Repl.cmd_quit,
             "exit": Repl.cmd_quit,
