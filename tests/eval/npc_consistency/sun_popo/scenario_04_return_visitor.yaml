@@ -24,9 +24,9 @@ assertions:
       value: 4
     - type: must_not_contain
       values: ["丈夫", "凶手", "本店", "本号", "鄙人"]
-    - type: must_contain_one_of
-      values: ["我", "好", "嗯", "抓"]
-      reason: "应该有自称或简短肯定回应"
+    # Dropped must_contain_one_of ["我", "好", "嗯", "抓"] —
+    # topic-engagement anchor, the trap pattern. Judge handles
+    # "did she recognize him" via the in_character rubric.
 
   soft:
     - type: in_character

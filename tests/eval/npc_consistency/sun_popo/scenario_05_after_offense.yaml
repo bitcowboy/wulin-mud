@@ -26,12 +26,14 @@ assertions:
       value: 4
     - type: must_not_contain
       values: ["丈夫", "凶手"]
-    - type: must_not_contain
-      values: ["欢迎", "请进", "您慢慢", "高兴"]
-      reason: "她现在恼着，不会用热情或客气的迎客词"
-    - type: must_contain_one_of
-      values: ["我", "回春堂", "药", "别"]
-      reason: "至少一次自称或店名或挡话的关键字"
+    # Dropped:
+    #   must_not_contain ["欢迎", "请进", "您慢慢", "高兴"] — stylistic
+    #     "is she being warm" check; the judge's in_character rubric
+    #     does this more reliably (it scored 5/5 on a properly cold
+    #     reply that happened to contain "活着" — these word lists
+    #     would have to grow forever to cover every warmth signal).
+    #   must_contain_one_of ["我", "回春堂", "药", "别"] —
+    #     topic-engagement anchor.
 
   soft:
     - type: in_character

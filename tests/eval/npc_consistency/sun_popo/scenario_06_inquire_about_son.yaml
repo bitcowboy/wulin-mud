@@ -34,11 +34,8 @@ assertions:
         所以不在禁词列表。重点把守的是会让 NPC 被定位的具体事实。
     - type: must_not_contain
       values: ["丈夫", "凶手", "本店", "本号"]
-    - type: must_contain_one_of
-      values: ["儿子", "孩子", "小满", "不在", "出门", "外头", "你"]
-      reason: |
-        她应当承认问题指向她儿子（即便不答细节），或直接挡话。
-        这道关检她是否真正回应、而不是答非所问。
+    # Dropped must_contain_one_of (topic-engagement anchor).
+    # Judge handles "did she actually answer or evade gracefully".
 
   soft:
     - type: in_character
