@@ -225,6 +225,58 @@ async def test_bad_quoting_is_handled(repl: Repl) -> None:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# /tick
+# ---------------------------------------------------------------------------
+
+
+async def test_tick_default_runs_once_and_reports_stats(repl: Repl, llm: FakeProvider) -> None:
+    """`/tick` with no arg runs one tick and reports moved+decayed+archived."""
+    turn = await repl.handle("/tick")
+    assert "tick" in turn.output
+    assert "心情漂移" in turn.output
+    assert "记忆衰减" in turn.output
+
+
+async def test_tick_takes_count(repl: Repl) -> None:
+    """`/tick 5` runs 5 ticks in sequence."""
+    turn = await repl.handle("/tick 5")
+    assert "5 个 tick" in turn.output
+
+
+async def test_tick_rejects_non_integer_count(repl: Repl) -> None:
+    turn = await repl.handle("/tick 多次")
+    assert "整数" in turn.output
+
+
+async def test_tick_rejects_unreasonable_count(repl: Repl) -> None:
+    turn = await repl.handle("/tick 1000")
+    assert "100" in turn.output
+
+
+async def test_tick_drifts_mood_visible_via_me(
+    repl: Repl, session: Session, llm: FakeProvider
+) -> None:
+    """End-to-end: offend Granny Sun, run ticks, mood recovers toward target."""
+    llm.queue("嘲我医术？")  # interpretation for the offense
+    await repl.handle("/offend 孙婆婆 嘲讽她的医术")
+    session.expire_all()
+    sun = repl._world().get_npc("npc_sun_popo")
+    assert sun is not None
+    valence_after_offense = sun.mood.valence
+    assert valence_after_offense < 0  # offended
+
+    # 20 ticks should bring mood ~halfway back to baseline (~0 for neutral
+    # personality). 0.1 alpha × 20 ticks ≈ 0.88 of the gap closed.
+    await repl.handle("/tick 20")
+    session.expire_all()
+    sun_after = repl._world().get_npc("npc_sun_popo")
+    assert sun_after is not None
+    assert (
+        sun_after.mood.valence > valence_after_offense
+    ), "mood should have drifted upward toward neutral target"
+
+
 async def test_two_turn_dialogue_works_through_repl(repl: Repl, llm: FakeProvider) -> None:
     llm.queue(
         "小哥进来坐。",  # turn 1 dialogue
