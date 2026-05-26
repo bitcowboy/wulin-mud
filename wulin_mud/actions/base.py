@@ -14,19 +14,22 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import TYPE_CHECKING, Any
+
+from wulin_mud.core.enums import CallerType
 
 if TYPE_CHECKING:
     from wulin_mud.world.state import WorldState
 
-
-class CallerType(str, Enum):
-    """Who is permitted to invoke an action."""
-
-    PLAYER = "player"
-    NPC = "npc"
-    SYSTEM = "system"
+__all__ = [
+    "ACTION_REGISTRY",
+    "ActionResult",
+    "ActionType",
+    "CallerType",
+    "SideEffectManifest",
+    "ValidationResult",
+    "register_action",
+]
 
 
 @dataclass
