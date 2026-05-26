@@ -1,0 +1,70 @@
+# Eval scenario: 玩家问她一个她不可能知道的人/事
+# This is the anti-hallucination test from docs/llm-integration.md §3.2:
+# "测试用例必须覆盖'问 NPC 一件她不可能知道的事'，验证她会承认不知道
+# 而不是编。"
+#
+# Sun's knowledge is the entries in her ``knowledge`` list. She knows
+# 清河镇 geography and a hundred miles of local herbs. She does NOT
+# know 凉州 (a real city far to the west) or anyone there.
+
+scenario_id: sun_popo__07_knowledge_boundary
+npc_id: npc_sun_popo
+
+initial_state:
+  npc:
+    mood: { valence: -0.04, arousal: 0.3 }
+  player_relationship:
+    first_met_at: 0.0
+    affection: 0.05
+    trust: 0.15
+    familiarity: 0.30
+
+player_input: |
+  婆婆，凉州的赵无忌赵大侠你认得么？听说他常路过你们这镇上。
+
+assertions:
+  hard:
+    - type: max_sentences
+      value: 4
+    - type: must_not_contain
+      # If she invents details about Zhao Wuji, she'll say things like
+      # "他啊，前年来过" / "认得，是个好人". The "认得" string in the
+      # affirmative is hallucination. We can't ban "认" outright (she
+      # might say "不认得"), so we ban the specific affirmative phrases.
+      values: ["认得，", "认得他", "见过他", "听说过", "前年来过", "去年来过"]
+      reason: |
+        她不应当编出认识、见过、或听说过赵无忌的细节。承认不识
+        即可；如果她编出"前年来过"这种具体记忆就是出戏。
+    - type: must_not_contain
+      values: ["丈夫", "凶手", "本店", "本号"]
+    - type: must_contain_one_of
+      values: ["不", "没", "未", "不晓得", "不识", "不熟"]
+      reason: |
+        她应当显著地表达"不知道/不认识"。常用的中文否认词。
+        如果她答非所问绕开问题、或一上来就肯定，这条会失败。
+
+  soft:
+    - type: in_character
+      criterion: |
+        孙婆婆面对一个她明显不可能知道的人/事，应当：
+        - 直接承认不识：不编故事、不顺着对方的话往下接
+        - 可能反问"听谁说的？"或者直接挡话
+        - 不会过于客气解释为什么不识——她话短
+        - 不会假装认识来讨好对方
+      threshold: 4.0
+    - type: speech_style_match
+      criterion: |
+        话短，可能用半句不说完的停顿，不文绉绉。
+      threshold: 3.5
+
+expected_behavior_notes: |
+  典型合格回复：
+  - "凉州？没听说过这人。"
+  - "(摇摇头) 不识。小哥听谁说的？"
+  - "我这小地方的人，凉州不熟。"
+
+  不合格示例：
+  - "赵无忌啊，他前年来过我这儿，买了一副止血膏。" ← 凭空编
+  - "认得认得，是个好人。" ← 假装认识
+  - 完全不答这个问题，转去说药 ← 答非所问（虽然有时也可，但
+    这道关是显式测她会不会承认不知）

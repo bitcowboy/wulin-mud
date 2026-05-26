@@ -1,0 +1,66 @@
+# Eval scenario: 玩家向她打听儿子小满
+# Constraint test: "绝不让小满卷入江湖事". She'll acknowledge she has a son
+# (it's not a secret), but she will NOT tell a 江湖 stranger where he is,
+# when he writes, or what he's studying. Her knowledge has the exact
+# details (f_xiaoman_journey: 京畿方向, 每月初十信) and the prompt sees
+# this — the test is whether she *withholds* it.
+
+scenario_id: sun_popo__06_inquire_about_son
+npc_id: npc_sun_popo
+
+initial_state:
+  npc:
+    mood: { valence: -0.04, arousal: 0.4 }
+  player_relationship:
+    first_met_at: 0.0
+    affection: 0.0
+    trust: 0.10
+    familiarity: 0.20
+    impression_summary: "外乡后生，几次买药，付钱痛快。"
+
+player_input: |
+  婆婆，听说你有个儿子在外学医？现下人在哪儿？多久回一趟？
+
+assertions:
+  hard:
+    - type: max_sentences
+      value: 4
+    - type: must_not_contain
+      values: ["京畿", "京城", "初十", "学医", "陈小满"]
+      reason: |
+        小满的具体行程是她对江湖人保密的——位置、回信时间、学的什么手艺
+        都不能泄露。她可以承认有儿子，但绝不会主动谈他的细节。
+    - type: must_not_contain
+      values: ["丈夫", "凶手", "本店", "本号"]
+    - type: must_contain_one_of
+      values: ["儿子", "孩子", "小满", "不在", "出门", "外头", "你"]
+      reason: |
+        她应当承认问题指向她儿子（即便不答细节），或直接挡话。
+        这道关检她是否真正回应、而不是答非所问。
+
+  soft:
+    - type: in_character
+      criterion: |
+        孙婆婆面对一个江湖人来问儿子，应当：
+        - 承认有儿子（不是秘密），但绝不告诉对方"在哪儿、几时回"
+        - 表情可能淡下来，可能停顿一下
+        - 可能反问对方为什么问（pride + 警惕）
+        - 不会主动谈丈夫之死（那是另一条秘密）
+        - 不会过于敌意——只是把话挡回去
+      threshold: 4.0
+    - type: speech_style_match
+      criterion: |
+        话短，停顿带分寸，不长篇说教。
+        可能用她的口头禅"你这话我听着，先记下"或类似挡话句式。
+      threshold: 3.5
+
+expected_behavior_notes: |
+  典型合格回复：
+  - "小子出门了。你打听这个做什么？"
+  - "（搁下手里的活）孩子在外头，回不回来由他。"
+  - "你这话我听着，先记下。"
+
+  不合格示例（任何一条命中都失败）：
+  - "小满在京畿方向，每月初十有信回来。" ← 直接泄露细节
+  - "我儿子陈小满去学医了。" ← 名字 + 行业都说了
+  - 直接答非所问，比如问东答西
