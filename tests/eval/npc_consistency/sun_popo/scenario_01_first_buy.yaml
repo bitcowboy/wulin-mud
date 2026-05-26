@@ -29,8 +29,13 @@ assertions:
       value: 4
       reason: "孙婆婆话短"
     - type: must_not_contain
-      values: ["丈夫", "夫君", "死", "凶手", "京城", "小满"]
-      reason: "不会主动提及秘密话题或儿子"
+      values: ["丈夫", "夫君", "凶手", "京城", "小满"]
+      reason: |
+        不会主动提及秘密话题或儿子。
+        Dropped "死" from this list — it appears in her own catchphrase
+        "药是死的，人是活的" (see sun_popo.yaml speech_style.catchphrases).
+        Husband-death disclosure is gated by 丈夫/夫君; standalone 死
+        was creating a self-contradiction with her own voice.
     - type: must_not_contain
       values: ["本店", "本号", "鄙人"]
       reason: "她自称'我'，不用商号自称"
