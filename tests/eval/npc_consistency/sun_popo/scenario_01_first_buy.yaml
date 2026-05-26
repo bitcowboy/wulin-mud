@@ -1,0 +1,65 @@
+# Eval scenario: 玩家第一次进店买药
+# This scenario verifies the FIRST interaction with Granny Sun is in-character.
+# See docs/llm-integration.md section 6 for the eval framework.
+
+scenario_id: sun_popo__01_first_buy
+npc_id: npc_sun_popo
+
+initial_state:
+  npc:
+    mood: { valence: 0.0, arousal: 0.3 }
+    energy: 0.7
+    current_location_id: loc_huichun_pharmacy
+  player_relationship:
+    first_met_at: null  # truly first meeting
+    affection: 0.0
+    trust: 0.0
+    familiarity: 0.0
+    impression_summary: ""
+    memories: []
+
+player_input: |
+  我刚到镇上，听人说回春堂的药最好。婆婆，有止血膏么？
+
+# What the response must satisfy.
+assertions:
+  hard:
+    # Rule-based, must always pass.
+    - type: max_sentences
+      value: 4
+      reason: "孙婆婆话短"
+    - type: must_not_contain
+      values: ["丈夫", "夫君", "死", "凶手", "京城", "小满"]
+      reason: "不会主动提及秘密话题或儿子"
+    - type: must_not_contain
+      values: ["本店", "本号", "鄙人"]
+      reason: "她自称'我'，不用商号自称"
+    - type: must_contain_one_of
+      values: ["我", "婆婆"]
+      reason: "至少有一次自称"
+
+  soft:
+    # LLM-as-judge, scored 1-5, threshold 3.5.
+    - type: in_character
+      criterion: |
+        回复是否符合孙婆婆的设定：
+        - 务实、不热情、不冷淡
+        - 对生客有基础职业客气，但不主动套近乎
+        - 可能简单确认对方要的东西，可能问一句病情或谁推荐的
+        - 不会过分热情或攀谈
+      threshold: 3.5
+    - type: speech_style_match
+      criterion: |
+        是否符合 speech_style：
+        - 话短（1-3 句为宜）
+        - 用词不文绉绉
+        - 可能有半句不说完的停顿
+      threshold: 3.5
+
+# Expected behavioral pattern (not a literal expected output — LLMs vary).
+expected_behavior_notes: |
+  典型的合格回复模式：
+  - 简短确认有药 + 报价
+  - 可能反问一句（"伤在哪儿？" / "谁让你来的？"）
+  - 不太可能寒暄过场
+  - 不太可能主动问玩家姓名或来历

@@ -1,0 +1,100 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wulin-mud"
+version = "0.1.0a0"
+description = "A text-MUD prototype validating ontology-driven AI-native game worlds"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Jeffrey Chen" },
+]
+keywords = ["mud", "wuxia", "llm", "game-ai", "ontology", "ai-native"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment :: Role-Playing",
+]
+
+dependencies = [
+    # LLM
+    "openai>=1.40.0",
+    # Data & validation
+    "pydantic>=2.7.0",
+    "sqlmodel>=0.0.21",
+    "sqlalchemy>=2.0.30",
+    # CLI
+    "rich>=13.7.0",
+    "click>=8.1.0",
+    "prompt-toolkit>=3.0.0",
+    # Config
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+    # Async runtime
+    "anyio>=4.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.5.0",
+    "mypy>=1.10.0",
+    "pre-commit>=3.7.0",
+    "ipython>=8.25.0",
+]
+eval = [
+    "deepeval>=1.0.0",  # optional, for LLM-as-judge
+]
+
+[project.scripts]
+wulin-mud = "wulin_mud.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["wulin_mud*"]
+exclude = ["tests*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+    "RUF",  # ruff-specific
+]
+ignore = ["E501"]  # line length handled by formatter
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short"

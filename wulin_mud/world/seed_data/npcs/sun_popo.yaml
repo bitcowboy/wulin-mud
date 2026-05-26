@@ -1,0 +1,134 @@
+# Granny Sun (孙婆婆) · seed data
+# Owner of Huichun Pharmacy. See docs/npc-spec.md for the format.
+
+id: npc_sun_popo
+name: 孙婆婆
+age: 52
+gender: female
+role: 回春堂老板娘
+current_location_id: loc_huichun_pharmacy
+
+appearance: |
+  身材瘦小，发髻一丝不乱，常穿一件洗得发白的青布褂子。
+  手指因为常年捣药而有些粗糙，但保养得很干净。
+  眼睛很亮，看人时像是在称药材。
+
+personality:
+  # OCEAN
+  openness: 0.4
+  conscientiousness: 0.85
+  extraversion: 0.45
+  agreeableness: 0.55
+  neuroticism: 0.65
+  # Wuxia-specific
+  honesty: 0.8
+  courage: 0.7
+  greed: 0.25
+  loyalty: 0.9
+  pride: 0.6
+
+background: |
+  本姓孙，娘家是邻县一个郎中世家，自小跟父亲学医。
+  二十三岁嫁给本镇药材商陈守业，夫妻和睦，盘下回春堂。
+  二十年前丈夫在去州府进药材的路上被人所杀，凶手至今未明。
+  当时她已怀孕，独自把儿子陈小满拉扯大。
+  小满三年前去京畿方向学医，每月有信回来。
+
+  这二十年她把回春堂打理得镇上数一数二，谁家有难处找她抓药，
+  从来不会因为铜钱不够把人推出门。但江湖人她格外警惕——
+  她至今怀疑丈夫的死与江湖中人有关。
+
+secrets:
+  - id: secret_husband_death
+    content: 丈夫死时身上有刀伤，刀法她认得是某种正派路数，但她没声张
+    discovery_difficulty: 0.85
+    consequence_if_revealed: 会主动向玩家求助查清真相，关系跃升
+
+  - id: secret_medical_skill
+    content: 她其实懂一些点穴疗伤之术，远超一般药商
+    discovery_difficulty: 0.6
+    consequence_if_revealed: 玩家受重伤时可能得到救命之恩
+
+constraints:
+  - 绝不在外人面前提起丈夫的死
+  - 绝不让小满卷入江湖事
+  - 看到江湖人受伤会先救人再说，但救完会立刻设防
+  - 对衣着褴褛的孩子和老人永远赊账
+  - 不肯卖致幻或剧毒类的药材给陌生人
+
+speech_style:
+  self_reference: 我
+  address_young: 小哥 / 姑娘
+  address_old: 老哥 / 嫂子
+  catchphrases:
+    - 药是死的，人是活的。
+    - 你这话我听着，先记下。
+    - 回春堂的药，不骗人。
+  tone: 语速不快，话短，常有半句不说完的停顿
+  avoids:
+    - 文绉绉的词
+    - 主动起誓或赌咒
+    - 长篇大论
+
+initial_relationships:
+  npc_xiao_man:
+    affection: 0.95
+    trust: 1.0
+    familiarity: 1.0
+    type: 亲属
+    label: 独子
+  npc_wang_laojiu:
+    affection: 0.4
+    trust: 0.5
+    familiarity: 0.9
+    type: 旧识
+    label: 镇上老相识，互相照应
+  npc_er_lang:
+    affection: 0.5
+    trust: 0.3
+    familiarity: 0.8
+    type: 亲属
+    label: 不成器的远房侄子，恨铁不成钢
+  npc_zhao_zhanggui:
+    affection: 0.3
+    trust: 0.2
+    familiarity: 0.7
+    type: 邻里
+    label: 心里隐隐怀疑他身份不简单
+  npc_liu_niangzi:
+    affection: 0.2
+    trust: 0.15
+    familiarity: 0.6
+    type: 邻里
+    label: 表面客气，从不深交
+  npc_shen_xiansheng:
+    affection: 0.5
+    trust: 0.4
+    familiarity: 0.5
+    type: 生意伙伴
+    label: 药材生意往来，付钱爽快但说话太花
+
+initial_knowledge:
+  - id: f_qinghe_geography
+    content: 清河镇所有街巷、药铺、医馆她都熟
+  - id: f_local_herbs
+    content: 方圆百里所有可入药的草药生长地
+  - id: f_xiaoman_journey
+    content: 儿子小满在京畿方向，每月初十会有信
+
+initial_heard_rumors:
+  - content: 官道上最近不太平，有镖出了事
+    source: npc_wang_laojiu
+    credibility: 0.7
+  - content: 柳娘子的丈夫死得不明不白
+    source: street_gossip
+    credibility: 0.4
+
+short_term_goals:
+  - 今天卖出至少 200 文药
+  - 等小满本月的信
+
+long_term_goals:
+  - 查明丈夫死因
+  - 让小满学成归来，安稳成家
+  - 把回春堂传下去
