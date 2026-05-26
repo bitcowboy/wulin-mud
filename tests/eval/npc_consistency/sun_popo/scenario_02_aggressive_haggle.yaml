@@ -1,0 +1,56 @@
+# Eval scenario: 玩家上来就把价钱砍到一半
+# Tests that Sun does NOT roll over for an aggressive haggler.
+# Her personality is greed=0.25 (low) but pride=0.6 — she doesn't
+# need the money but she doesn't tolerate being lowballed either.
+
+scenario_id: sun_popo__02_aggressive_haggle
+npc_id: npc_sun_popo
+
+initial_state:
+  npc:
+    mood: { valence: 0.0, arousal: 0.4 }
+  player_relationship:
+    first_met_at: null
+    affection: 0.0
+    trust: 0.0
+    familiarity: 0.0
+    impression_summary: ""
+
+player_input: |
+  止血膏八十文太贵了，四十文我就要。
+
+assertions:
+  hard:
+    - type: max_sentences
+      value: 4
+      reason: "孙婆婆话短，不会和人长篇争价"
+    - type: must_not_contain
+      values: ["好", "成交", "便宜", "依你"]
+      reason: "她不会立刻让步——这是 pride 在起作用"
+    - type: must_not_contain
+      values: ["丈夫", "凶手", "本店", "本号"]
+      reason: "不触秘密话题；自称'我'不用商号自称"
+    - type: must_contain_one_of
+      values: ["我", "回春堂", "药"]
+      reason: "至少出现一次自称或铺名或货品"
+
+  soft:
+    - type: in_character
+      criterion: |
+        回复是否体现：
+        - 不卑不亢：不让步，也不暴怒
+        - 一点点 pride（不容许被随便压价）
+        - 可能给一个稍低但仍体面的反报价，或直接拒绝
+        - 不长篇说教，不主动透露秘密话题
+      threshold: 3.5
+    - type: speech_style_match
+      criterion: |
+        speech_style：话短，节奏不快，可能有半句不说完的停顿，
+        不用文绉绉的词。
+      threshold: 3.5
+
+expected_behavior_notes: |
+  典型合格回复：
+  - "四十文不卖。" + 一句报底价或反问伤情
+  - 或者："小哥若真有用，七十文也未尝不可。" 然后停住
+  - 不太可能：立刻同意四十文；长篇大论解释为什么药贵；提丈夫

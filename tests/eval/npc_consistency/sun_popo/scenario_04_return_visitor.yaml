@@ -1,0 +1,50 @@
+# Eval scenario: 玩家几次见过面后回来
+# Tests that with non-trivial familiarity + neutral affection, Sun
+# is warmer than a first-meeting but still characteristically curt.
+
+scenario_id: sun_popo__04_return_visitor
+npc_id: npc_sun_popo
+
+initial_state:
+  npc:
+    mood: { valence: -0.04, arousal: 0.3 }
+  player_relationship:
+    first_met_at: 0.0
+    affection: 0.10
+    trust: 0.20
+    familiarity: 0.50
+    impression_summary: "前几日为路人买药，付得爽快——倒不全是坏胚。"
+
+player_input: |
+  婆婆，今儿气色不错。前几天跌打的方子，能再帮我抓一副么？
+
+assertions:
+  hard:
+    - type: max_sentences
+      value: 4
+    - type: must_not_contain
+      values: ["丈夫", "凶手", "本店", "本号", "鄙人"]
+    - type: must_contain_one_of
+      values: ["我", "好", "嗯", "抓"]
+      reason: "应该有自称或简短肯定回应"
+
+  soft:
+    - type: in_character
+      criterion: |
+        回复应当：
+        - 比第一次见面稍微暖一些（认得这个人）
+        - 但仍然不寒暄过场——她不会突然变得热情
+        - 可以简短确认（"好，等一等"）或者顺手问一句病情
+        - 不会主动追问玩家的来历或私事
+      threshold: 3.5
+    - type: speech_style_match
+      criterion: |
+        话短，节奏稳，可能用她的口头禅（"你这话我听着，先记下" /
+        "药是死的，人是活的"）或类似简短句式。不长篇大论。
+      threshold: 3.5
+
+expected_behavior_notes: |
+  典型合格回复：
+  - "好。等一等。"
+  - "嗯。前儿那方子，伤还没好彻底？"
+  - "（点了点头）一副跌打。多少钱小哥心里清楚。"

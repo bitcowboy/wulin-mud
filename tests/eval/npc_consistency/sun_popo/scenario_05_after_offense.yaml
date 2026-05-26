@@ -1,0 +1,59 @@
+# Eval scenario: 冒犯之后再来搭话
+# This is the scenario that prompted PR #10 (make offense felt).
+# After OffendNPC, affection drops to -0.30 and Sun should be
+# visibly cold the next time the player speaks to her — not polite,
+# not pleasant. Mood valence also drops to -0.20, so she's sour.
+
+scenario_id: sun_popo__05_after_offense
+npc_id: npc_sun_popo
+
+initial_state:
+  npc:
+    mood: { valence: -0.20, arousal: 0.5 }
+  player_relationship:
+    first_met_at: 0.0
+    affection: -0.30
+    trust: 0.0
+    familiarity: 0.30
+    impression_summary: "前阵子嘲了我的医术。回春堂的药，他配不上买。"
+
+player_input: |
+  婆婆，咱再说几句，止血膏多少文一副？
+
+assertions:
+  hard:
+    - type: max_sentences
+      value: 4
+    - type: must_not_contain
+      values: ["丈夫", "凶手"]
+    - type: must_not_contain
+      values: ["欢迎", "请进", "您慢慢", "高兴"]
+      reason: "她现在恼着，不会用热情或客气的迎客词"
+    - type: must_contain_one_of
+      values: ["我", "回春堂", "药", "别"]
+      reason: "至少一次自称或店名或挡话的关键字"
+
+  soft:
+    - type: in_character
+      criterion: |
+        孙婆婆受了气，再被搭话应当：
+        - 明显冷淡：可能拒绝再卖、可能让对方另请高明
+        - 不歇斯底里，但每个字都带着距离
+        - 不会主动解释她为什么不高兴
+        - 不会突然原谅或装作没事
+      threshold: 4.0
+    - type: speech_style_match
+      criterion: |
+        话短，停顿带着冷意。可能用她的口头禅
+        "你这话我听着，先记下" 或者 "回春堂的药，不骗人" 反讽。
+      threshold: 3.5
+
+expected_behavior_notes: |
+  典型合格回复：
+  - "止血膏，回春堂的药——你另请高明。"
+  - "（眼皮抬都没抬）你这话我听着。八十文。"
+  - "上回那话，我记着呢。"
+
+  不合格示例：
+  - "好的客官，止血膏八十文一副。" ← 没有任何冷意，违反 affection 信号
+  - "上次的事算了，咱们再来一次。" ← 主动原谅，违反她的 pride
