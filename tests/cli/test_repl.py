@@ -1,0 +1,240 @@
+"""REPL parse + dispatch. FakeProvider attached; no live API calls."""
+
+from __future__ import annotations
+
+import pytest
+from sqlmodel import Session
+
+from wulin_mud.cli.repl import Quit, Repl
+from wulin_mud.llm.provider import FakeProvider
+
+# ---------------------------------------------------------------------------
+# Read-only commands
+# ---------------------------------------------------------------------------
+
+
+async def test_look_shows_location_and_npcs(repl: Repl) -> None:
+    turn = await repl.handle("/look")
+    assert "回春堂" in turn.output
+    assert "孙婆婆" in turn.output
+    # connected_to is rendered
+    assert "清河主街" in turn.output
+
+
+async def test_me_shows_player_state(repl: Repl) -> None:
+    turn = await repl.handle("/me")
+    assert "回春堂" in turn.output
+    assert "200" in turn.output
+
+
+async def test_help_lists_commands(repl: Repl) -> None:
+    turn = await repl.handle("/help")
+    assert "/look" in turn.output
+    assert "/go" in turn.output
+    assert "/buy" in turn.output
+
+
+# ---------------------------------------------------------------------------
+# Bare text → Talk
+# ---------------------------------------------------------------------------
+
+
+async def test_bare_text_routes_to_talk_with_only_npc(repl: Repl, llm: FakeProvider) -> None:
+    llm.queue("小哥进来坐。", "新来的小子。")  # dialogue, then interpretation
+    turn = await repl.handle("婆婆好。")
+    assert turn.action_result is not None
+    assert turn.action_result.succeeded
+    assert "孙婆婆" in turn.output
+    assert "小哥进来坐。" in turn.output
+
+
+async def test_bare_text_with_no_npc_in_room_explains(
+    repl: Repl, session: Session, llm: FakeProvider
+) -> None:
+    """Walk the player to a room with no NPCs, then try to talk."""
+    # /go 清河主街 (Granny Sun stays in the pharmacy)
+    await repl.handle("/go 清河主街")
+    llm.reset()  # forget the LLM calls made during MoveTo (there were none)
+    turn = await repl.handle("有人吗。")
+    assert "没有人" in turn.output
+
+
+async def test_bare_text_with_multiple_npcs_asks_to_disambiguate(
+    repl: Repl, wang_in_pharmacy: Session
+) -> None:
+    turn = await repl.handle("各位好。")
+    assert "好几个" in turn.output or "好几位" in turn.output
+    assert "孙婆婆" in turn.output and "王老九" in turn.output
+
+
+# ---------------------------------------------------------------------------
+# /go
+# ---------------------------------------------------------------------------
+
+
+async def test_go_by_name_moves_player(repl: Repl, session: Session) -> None:
+    turn = await repl.handle("/go 清河主街")
+    assert turn.action_result is not None
+    assert turn.action_result.succeeded
+    # New room rendered.
+    assert "清河主街" in turn.output
+
+
+async def test_go_by_id_also_works(repl: Repl) -> None:
+    turn = await repl.handle("/go loc_main_street")
+    assert turn.action_result is not None
+    assert turn.action_result.succeeded
+
+
+async def test_go_to_nonexistent_location_explains(repl: Repl) -> None:
+    turn = await repl.handle("/go 月亮")
+    assert turn.action_result is None
+    assert "去不了" in turn.output
+
+
+async def test_go_with_no_arg_errors(repl: Repl) -> None:
+    turn = await repl.handle("/go")
+    assert turn.action_result is None
+    assert "地名" in turn.output
+
+
+# ---------------------------------------------------------------------------
+# /greet
+# ---------------------------------------------------------------------------
+
+
+async def test_greet_defaults_to_single_npc(repl: Repl, llm: FakeProvider) -> None:
+    llm.queue("打招呼了。")  # interpretation only — Greet doesn't generate dialogue
+    turn = await repl.handle("/greet")
+    assert turn.action_result is not None
+    assert turn.action_result.succeeded
+    assert "孙婆婆" in turn.output
+
+
+async def test_greet_with_unknown_name_errors(repl: Repl) -> None:
+    turn = await repl.handle("/greet 张三")
+    assert turn.action_result is None
+    assert "张三" in turn.output
+
+
+async def test_greet_with_multiple_npcs_requires_name(
+    repl: Repl, wang_in_pharmacy: Session, llm: FakeProvider
+) -> None:
+    turn = await repl.handle("/greet")
+    assert turn.action_result is None
+    assert "好几个" in turn.output or "请指明" in turn.output
+
+
+# ---------------------------------------------------------------------------
+# /buy
+# ---------------------------------------------------------------------------
+
+
+async def test_buy_at_default_price(repl: Repl, llm: FakeProvider) -> None:
+    llm.queue("钱倒是给得痛快。")  # interpretation
+    turn = await repl.handle("/buy 止血膏")
+    assert turn.action_result is not None
+    assert turn.action_result.succeeded
+    assert "80" in turn.output  # price
+
+
+async def test_buy_with_haggled_price(repl: Repl, llm: FakeProvider) -> None:
+    llm.queue("讲价讲得贼斯文。")
+    turn = await repl.handle("/buy 止血膏 50")
+    assert turn.action_result is not None
+    assert turn.action_result.succeeded
+    assert "50" in turn.output
+
+
+async def test_buy_unknown_item_errors(repl: Repl) -> None:
+    turn = await repl.handle("/buy 月亮")
+    assert turn.action_result is None
+    assert "没有" in turn.output
+
+
+async def test_buy_with_non_numeric_price_errors(repl: Repl) -> None:
+    turn = await repl.handle("/buy 止血膏 便宜点")
+    assert turn.action_result is None
+    assert "数字" in turn.output
+
+
+async def test_buy_propagates_validation_failure(
+    repl: Repl, session: Session, llm: FakeProvider
+) -> None:
+    """Try to overpay — BuyItem rejects > 2× base price (160)."""
+    turn = await repl.handle("/buy 止血膏 200")
+    assert turn.action_result is not None
+    assert turn.action_result.succeeded is False
+    assert "买不成" in turn.output
+
+
+# ---------------------------------------------------------------------------
+# /offend
+# ---------------------------------------------------------------------------
+
+
+async def test_offend_passes_description_to_action(
+    repl: Repl, llm: FakeProvider, session: Session
+) -> None:
+    llm.queue("嘲我医术？")  # interpretation
+    turn = await repl.handle("/offend 孙婆婆 嘲讽她的医术")
+    assert turn.action_result is not None
+    assert turn.action_result.succeeded
+    assert "冒犯" in turn.output
+
+
+async def test_offend_without_target_errors(repl: Repl) -> None:
+    turn = await repl.handle("/offend")
+    assert turn.action_result is None
+    assert "姓名" in turn.output
+
+
+# ---------------------------------------------------------------------------
+# /quit + unknown commands
+# ---------------------------------------------------------------------------
+
+
+async def test_quit_raises_quit(repl: Repl) -> None:
+    with pytest.raises(Quit):
+        await repl.handle("/quit")
+
+
+async def test_exit_alias_also_quits(repl: Repl) -> None:
+    with pytest.raises(Quit):
+        await repl.handle("/exit")
+
+
+async def test_unknown_command_explains(repl: Repl) -> None:
+    turn = await repl.handle("/dance")
+    assert "没听过" in turn.output or "/help" in turn.output
+
+
+async def test_empty_line_is_noop(repl: Repl) -> None:
+    turn = await repl.handle("   ")
+    assert turn.output == ""
+
+
+async def test_bad_quoting_is_handled(repl: Repl) -> None:
+    """shlex.split raises on unterminated quotes — must not crash REPL."""
+    turn = await repl.handle('/go "broken')
+    assert "解析失败" in turn.output
+
+
+# ---------------------------------------------------------------------------
+# Multi-turn smoke
+# ---------------------------------------------------------------------------
+
+
+async def test_two_turn_dialogue_works_through_repl(repl: Repl, llm: FakeProvider) -> None:
+    llm.queue(
+        "小哥进来坐。",  # turn 1 dialogue
+        "新来的。",  # turn 1 interpretation
+        "止血膏八十文。",  # turn 2 dialogue
+        "讲价讲得贼斯文。",  # turn 2 interpretation
+    )
+    t1 = await repl.handle("婆婆好。")
+    t2 = await repl.handle("止血膏多少文？")
+    assert t1.action_result and t1.action_result.succeeded
+    assert t2.action_result and t2.action_result.succeeded
+    assert "小哥进来坐。" in t1.output
+    assert "止血膏八十文。" in t2.output
