@@ -11,6 +11,7 @@ Public surface:
   return the NPC's first-person reading of the event.
 """
 
+from wulin_mud.llm.dialogue import generate_dialogue
 from wulin_mud.llm.interpretation import generate_interpretation
 from wulin_mud.llm.provider import (
     FakeProvider,
@@ -26,5 +27,6 @@ __all__ = [
     "LLMCall",
     "LLMProvider",
     "OpenAIProvider",
+    "generate_dialogue",
     "generate_interpretation",
 ]

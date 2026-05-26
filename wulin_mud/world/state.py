@@ -44,6 +44,7 @@ from wulin_mud.ontology import (
 from wulin_mud.world.persistence import (
     ItemRow,
     LocationRow,
+    MemoryRow,
     NpcRow,
     PlayerStateRow,
     action_record_to_row,
@@ -54,6 +55,7 @@ from wulin_mud.world.persistence import (
     player_state_to_row,
     row_to_item,
     row_to_location,
+    row_to_memory,
     row_to_player_state,
     save_npc,
 )
@@ -214,7 +216,7 @@ class WorldState:
         raise NotImplementedError(f"Witness rule {rule!r} is not implemented yet.")
 
     # ------------------------------------------------------------------
-    # Memory + ActionRecord (system writes)
+    # Memory + ActionRecord (system writes + retrieval)
     # ------------------------------------------------------------------
 
     def save_memory(self, memory: Memory) -> None:
@@ -222,6 +224,83 @@ class WorldState:
 
     def save_action_record(self, record: ActionRecord) -> None:
         self._session.merge(action_record_to_row(record))
+
+    def retrieve_relevant_memories(
+        self,
+        npc_id: str,
+        *,
+        top_n: int = 10,
+        query_tags: Sequence[str] = (),
+    ) -> list[Memory]:
+        """Return the top-N memories belonging to ``npc_id``, ranked by
+        importance × recency × tag_relevance (see
+        :mod:`wulin_mud.world.memory_retrieval`).
+
+        Pure read — does NOT update last_recalled_at. Call
+        :meth:`mark_memories_recalled` if the memory is being used in
+        a prompt and should decay slower from this point on.
+        """
+        from wulin_mud.world.memory_retrieval import score_memory
+
+        rows = self._session.exec(select(MemoryRow).where(MemoryRow.npc_id == npc_id)).all()
+        memories = [row_to_memory(r) for r in rows]
+        if not memories:
+            return []
+        memories.sort(
+            key=lambda m: score_memory(m, now=self._now, query_tags=query_tags),
+            reverse=True,
+        )
+        return memories[:top_n]
+
+    def retrieve_recent_dialogue(
+        self,
+        npc_id: str,
+        *,
+        with_actor_id: str,
+        max_turns: int = 6,
+    ) -> list[Memory]:
+        """Last `max_turns` dialogue rows between ``npc_id`` and
+        ``with_actor_id``, oldest first (so the prompt can render them
+        in conversation order).
+
+        A "dialogue row" is a Memory with event_type=TALKED, owned by
+        ``npc_id``, whose participants include ``with_actor_id``.
+        """
+        rows = self._session.exec(
+            select(MemoryRow)
+            .where(
+                MemoryRow.npc_id == npc_id,
+                MemoryRow.event_type == EventType.TALKED.value,
+            )
+            .order_by(MemoryRow.timestamp.desc())  # type: ignore[attr-defined]
+        ).all()
+        recent: list[Memory] = []
+        for row in rows:
+            mem = row_to_memory(row)
+            if with_actor_id in mem.participants:
+                recent.append(mem)
+            if len(recent) >= max_turns:
+                break
+        recent.reverse()  # oldest first
+        return recent
+
+    def mark_memories_recalled(
+        self, memory_ids: Iterable[str], *, at_time: float | None = None
+    ) -> None:
+        """Set last_recalled_at on the given memories.
+
+        last_recalled_at is NOT write-once (only ``interpretation`` is),
+        so this is a plain UPDATE — it doesn't trip the immutability
+        trigger. Bumping it makes the memory decay slower going forward,
+        which is the docs/ontology.md §2.3 "被想起的事衰减更慢" rule.
+        """
+        ts = at_time if at_time is not None else self._now
+        for mem_id in memory_ids:
+            row = self._session.get(MemoryRow, mem_id)
+            if row is None:
+                continue
+            row.last_recalled_at = ts
+            self._session.add(row)
 
     async def record_witnessed_event(
         self,
