@@ -100,6 +100,36 @@ def test_handles_object_score_out_of_range_with_fallback_int() -> None:
     assert r.score == 0
 
 
+def test_extracts_score_from_chinese_natural_language_gei_n_fen() -> None:
+    """Real failure mode from live eval: judge gave pure-Chinese
+    scoring like '给 4 分' with no JSON at all."""
+    text = "根据评分标准，我给 4 分。回复务实，符合设定。"
+    r = _parse_judge_output(text)
+    assert r.score == 4
+
+
+def test_extracts_score_from_chinese_pingfen_n() -> None:
+    text = "评分 5。这段回复完全符合孙婆婆的设定。"
+    r = _parse_judge_output(text)
+    assert r.score == 5
+
+
+def test_extracts_score_from_bare_n_fen() -> None:
+    """Even tighter fallback: '4 分' anywhere in the text."""
+    text = "回复 4 分，理由：略有违和但大体符合。"
+    r = _parse_judge_output(text)
+    assert r.score == 4
+
+
+def test_fallback_does_not_match_unrelated_numbers() -> None:
+    """A reply that mentions a year or quantity but no scoring should
+    fail to parse, not pick up '24' or '100' as the score."""
+    text = "回复提到了 2024 年的事，但与评分标准无关。"
+    r = _parse_judge_output(text)
+    # 2024 → not in 1-5, no `N 分` pattern, so no recovery.
+    assert r.score == 0
+
+
 # ---------------------------------------------------------------------------
 # evaluate_soft
 # ---------------------------------------------------------------------------
