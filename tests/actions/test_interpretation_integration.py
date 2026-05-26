@@ -126,6 +126,53 @@ async def test_without_llm_interpretations_remain_empty(
     assert row.interpretation == ""
 
 
+async def test_recent_memories_about_actor_appear_in_next_interpretation_prompt(
+    session: Session, world_seeded: WorldState
+) -> None:
+    """After offending Granny Sun, the next Greet's interpretation prompt
+    must include her OFFENDED interpretation in recent_context — that's
+    what keeps her reads consistent."""
+    llm = FakeProvider(
+        responses=[
+            # OffendNPC's witness Memory interpretation
+            "这小子嘴上没分寸，气死我了。",
+            # Subsequent Greet's witness Memory interpretation
+            "(but the prompt for this must mention the prior offense)",
+        ]
+    )
+    # Step 1: offend.
+    r1 = await execute_action(
+        session=session,
+        action_name="OffendNPC",
+        params={"target_id": "npc_sun_popo", "description": "嘲讽她的医术"},
+        actor_id="player",
+        initiated_by=InitiatedBy.PLAYER_INPUT,
+        now=FIXED_NOW,
+        llm=llm,
+    )
+    assert r1.succeeded
+
+    # Step 2: Greet — the second LLM call (interpretation for the Greet
+    # memory) should carry the prior OFFENDED interpretation in its prompt.
+    r2 = await execute_action(
+        session=session,
+        action_name="Greet",
+        params={"target_id": "npc_sun_popo"},
+        actor_id="player",
+        initiated_by=InitiatedBy.PLAYER_INPUT,
+        now=FIXED_NOW + 60,
+        llm=llm,
+    )
+    assert r2.succeeded
+
+    # The second interpretation call's prompt must mention the prior
+    # offense's interpretation.
+    second_prompt = llm.calls[1].user
+    assert (
+        "嘴上没分寸" in second_prompt
+    ), "recent_context must thread the prior interpretation into the next interpretation prompt"
+
+
 async def test_filled_interpretation_is_locked_by_writeonce_invariant(
     session: Session, world_seeded: WorldState
 ) -> None:

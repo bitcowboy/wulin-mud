@@ -167,6 +167,80 @@ def test_user_prompt_renders_recent_dialogue_in_order() -> None:
     assert 0 < pos_0_you < pos_1_you
 
 
+def test_negative_affection_renders_grudge_narrative() -> None:
+    """A felt sentence, not just a number — LLMs underweight numerics."""
+    from wulin_mud.core.enums import RelationshipType
+    from wulin_mud.ontology import PlayerRelationship
+
+    sun = _sun()
+    sun.player_relationship = PlayerRelationship(
+        other_id="player",
+        affection=-0.35,
+        trust=0.05,
+        familiarity=0.4,
+        relationship_type=RelationshipType.STRANGER,
+        relationship_label="外人",
+    )
+    p = build_dialogue_prompt(npc=sun, actor_id="player", player_input="婆婆好。")
+    assert "芥蒂" in p.user
+    assert "不太信" in p.user  # trust narrative also fires
+
+
+def test_strong_negative_affection_uses_stronger_phrase() -> None:
+    from wulin_mud.core.enums import RelationshipType
+    from wulin_mud.ontology import PlayerRelationship
+
+    sun = _sun()
+    sun.player_relationship = PlayerRelationship(
+        other_id="player",
+        affection=-0.7,
+        trust=0.0,
+        familiarity=0.4,
+        relationship_type=RelationshipType.STRANGER,
+        relationship_label="外人",
+    )
+    p = build_dialogue_prompt(npc=sun, actor_id="player", player_input="婆婆好。")
+    assert "厌恶" in p.user
+
+
+def test_positive_affection_renders_warm_narrative() -> None:
+    from wulin_mud.core.enums import RelationshipType
+    from wulin_mud.ontology import PlayerRelationship
+
+    sun = _sun()
+    sun.player_relationship = PlayerRelationship(
+        other_id="player",
+        affection=0.6,
+        trust=0.8,
+        familiarity=0.4,
+        relationship_type=RelationshipType.STRANGER,
+        relationship_label="外人",
+    )
+    p = build_dialogue_prompt(npc=sun, actor_id="player", player_input="婆婆好。")
+    assert "愿意" in p.user
+    assert "信得过" in p.user
+
+
+def test_neutral_affection_emits_no_narrative_line() -> None:
+    """No extra editorial when there's nothing notable to say."""
+    from wulin_mud.core.enums import RelationshipType
+    from wulin_mud.ontology import PlayerRelationship
+
+    sun = _sun()
+    sun.player_relationship = PlayerRelationship(
+        other_id="player",
+        affection=0.0,
+        trust=0.4,
+        familiarity=0.4,
+        relationship_type=RelationshipType.STRANGER,
+        relationship_label="外人",
+    )
+    p = build_dialogue_prompt(npc=sun, actor_id="player", player_input="婆婆好。")
+    assert "芥蒂" not in p.user
+    assert "厌恶" not in p.user
+    assert "愿意" not in p.user
+
+
 def test_user_prompt_carries_the_player_input_verbatim() -> None:
     p = build_dialogue_prompt(
         npc=_sun(),

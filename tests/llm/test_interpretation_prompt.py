@@ -110,3 +110,57 @@ def test_prompt_with_unknown_actor_npc_falls_back_gracefully() -> None:
     prompt = build_interpretation_prompt(npc=sun, memory=mem, actor_id="npc_some_stranger")
     # No relationship row — we still produce a usable prompt.
     assert "npc_some_stranger" in prompt.user
+
+
+def test_recent_context_memories_show_up_in_prompt() -> None:
+    """Prior interpretations are surfaced so the LLM stays grounded
+    across events about the same actor."""
+    sun = _make_sun()
+    mem = _make_memory(sun.id)
+    prior = Memory(
+        id="prior_x",
+        timestamp=1000.0,
+        event_type=EventType.OFFENDED,
+        participants=["player", sun.id],
+        location_id=mem.location_id,
+        npc_id=sun.id,
+        interpretation="这小子刚才嘴上没分寸，让我心里堵了一下。",
+        importance=0.6,
+        emotional_charge=-0.4,
+    )
+    prompt = build_interpretation_prompt(
+        npc=sun, memory=mem, actor_id="player", recent_context=[prior]
+    )
+    assert "嘴上没分寸" in prompt.user
+    # The instruction-line about coloring by recent state should also be there.
+    assert "冒犯" in prompt.user
+
+
+def test_recent_context_absent_renders_a_polite_blank() -> None:
+    """No prior context → render an empty marker so the LLM doesn't
+    hallucinate history."""
+    sun = _make_sun()
+    mem = _make_memory(sun.id)
+    prompt = build_interpretation_prompt(npc=sun, memory=mem, actor_id="player")
+    assert "没有什么关于他的印象" in prompt.user
+
+
+def test_recent_context_skips_memories_with_empty_interpretation() -> None:
+    """Legacy / in-flight rows with empty interpretation are filtered out."""
+    sun = _make_sun()
+    mem = _make_memory(sun.id)
+    empty_one = Memory(
+        id="m_empty",
+        timestamp=999.0,
+        event_type=EventType.TALKED,
+        participants=["player", sun.id],
+        location_id=mem.location_id,
+        npc_id=sun.id,
+        # interpretation defaults to ""
+        importance=0.3,
+    )
+    prompt = build_interpretation_prompt(
+        npc=sun, memory=mem, actor_id="player", recent_context=[empty_one]
+    )
+    # No interpretation to show → fallback "没有什么..." line
+    assert "没有什么关于他的印象" in prompt.user
