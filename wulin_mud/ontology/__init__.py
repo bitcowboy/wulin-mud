@@ -15,6 +15,7 @@ from wulin_mud.ontology.location import Location
 from wulin_mud.ontology.memory import Memory, MemoryInterpretationLocked
 from wulin_mud.ontology.npc import NPC
 from wulin_mud.ontology.personality import Personality
+from wulin_mud.ontology.player_state import PLAYER_ID, PlayerState
 from wulin_mud.ontology.relationship import PlayerRelationship, Relationship
 from wulin_mud.ontology.rumor import Rumor
 from wulin_mud.ontology.value_objects import (
@@ -29,6 +30,7 @@ from wulin_mud.ontology.value_objects import (
 
 __all__ = [
     "NPC",
+    "PLAYER_ID",
     "ActionRecord",
     "Fact",
     "Goal",
@@ -40,6 +42,7 @@ __all__ = [
     "Mood",
     "Personality",
     "PlayerRelationship",
+    "PlayerState",
     "Relationship",
     "Rumor",
     "RumorSpread",

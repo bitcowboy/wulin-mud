@@ -1,8 +1,8 @@
 """World-state runtime: persistence, world tick, and seed loading.
 
-Currently only persistence is implemented (see docs/roadmap.md
-v0.1 Day 2-4). World tick and the in-memory WorldState facade arrive
-in later sprints.
+Day 2-4 added the SQLite persistence layer.
+Day 4-7 adds the WorldState facade used by Actions.
+World tick scheduling lands in a later sprint.
 """
 
 from wulin_mud.world.persistence import (
@@ -13,6 +13,7 @@ from wulin_mud.world.persistence import (
     MemoryRow,
     NpcRow,
     PlayerRelationshipRow,
+    PlayerStateRow,
     RelationshipRow,
     RumorRow,
     get_engine,
@@ -21,6 +22,7 @@ from wulin_mud.world.persistence import (
     load_npc,
     save_npc,
 )
+from wulin_mud.world.state import WorldState
 
 __all__ = [
     "DEFAULT_DB_URL",
@@ -30,8 +32,10 @@ __all__ = [
     "MemoryRow",
     "NpcRow",
     "PlayerRelationshipRow",
+    "PlayerStateRow",
     "RelationshipRow",
     "RumorRow",
+    "WorldState",
     "get_engine",
     "init_db",
     "list_npc_ids",
