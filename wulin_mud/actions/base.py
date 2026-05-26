@@ -14,13 +14,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
-from wulin_mud.core.enums import CallerType
+from wulin_mud.core.enums import CallerType, WitnessesRule
 
 if TYPE_CHECKING:
-    # Forward reference: wulin_mud.world.state is added in a later sprint.
-    from wulin_mud.world.state import WorldState  # type: ignore[import-not-found]
+    from wulin_mud.world.state import WorldState
 
 __all__ = [
     "ACTION_REGISTRY",
@@ -29,6 +28,7 @@ __all__ = [
     "CallerType",
     "SideEffectManifest",
     "ValidationResult",
+    "WitnessesRule",
     "register_action",
 ]
 
@@ -52,7 +52,8 @@ class SideEffectManifest:
     """
 
     mutates_fields: list[str] = field(default_factory=list)
-    witnesses_rule: str = "SAME_LOCATION"
+    witnesses_rule: WitnessesRule = WitnessesRule.SAME_LOCATION
+    explicit_witnesses: list[str] = field(default_factory=list)
     generates_rumor: bool = False
     rumor_spice: float = 0.0
     triggers_delayed: list[dict[str, Any]] = field(default_factory=list)
@@ -77,9 +78,9 @@ class ActionType(ABC):
     See docs/architecture.md section 3.
     """
 
-    name: str
-    description: str
-    callable_by: set[CallerType]
+    name: ClassVar[str]
+    description: ClassVar[str]
+    callable_by: ClassVar[set[CallerType]]
 
     @abstractmethod
     def validate(

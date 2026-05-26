@@ -34,6 +34,7 @@ from wulin_mud.ontology import (
     Location,
     Memory,
     PlayerRelationship,
+    PlayerState,
     Relationship,
     Rumor,
 )
@@ -164,6 +165,15 @@ class MemoryRow(SQLModel, table=True):
 
     tags: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     embedding: list[float] | None = Field(default=None, sa_column=Column(JSON))
+
+
+class PlayerStateRow(SQLModel, table=True):
+    __tablename__ = "player_state"
+
+    id: str = Field(primary_key=True)
+    current_location_id: str
+    wealth: int = 0
+    inventory_item_ids: list[str] = Field(default_factory=list, sa_column=Column(JSON))
 
 
 class ActionRecordRow(SQLModel, table=True):
@@ -536,6 +546,26 @@ def row_to_action_record(row: ActionRecordRow) -> ActionRecord:
     )
 
 
+def player_state_to_row(state: PlayerState) -> PlayerStateRow:
+    return PlayerStateRow(
+        id=state.id,
+        current_location_id=state.current_location_id,
+        wealth=state.wealth,
+        inventory_item_ids=list(state.inventory_item_ids),
+    )
+
+
+def row_to_player_state(row: PlayerStateRow) -> PlayerState:
+    return PlayerState.model_validate(
+        {
+            "id": row.id,
+            "current_location_id": row.current_location_id,
+            "wealth": row.wealth,
+            "inventory_item_ids": row.inventory_item_ids,
+        }
+    )
+
+
 # ---------------------------------------------------------------------------
 # Convenience save / load helpers
 # ---------------------------------------------------------------------------
@@ -581,6 +611,7 @@ __all__ = [
     "MemoryRow",
     "NpcRow",
     "PlayerRelationshipRow",
+    "PlayerStateRow",
     "RelationshipRow",
     "RumorRow",
     "action_record_to_row",
@@ -593,6 +624,7 @@ __all__ = [
     "memory_to_row",
     "npc_to_row",
     "player_relationship_to_row",
+    "player_state_to_row",
     "relationship_to_row",
     "row_to_action_record",
     "row_to_item",
@@ -600,6 +632,7 @@ __all__ = [
     "row_to_memory",
     "row_to_npc",
     "row_to_player_relationship",
+    "row_to_player_state",
     "row_to_relationship",
     "row_to_rumor",
     "rumor_to_row",
