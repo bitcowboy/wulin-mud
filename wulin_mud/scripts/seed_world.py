@@ -20,8 +20,7 @@ documents what the seeding process needs to do.
 
 def main() -> None:
     raise NotImplementedError(
-        "World seeding is not implemented yet. See docs/roadmap.md, "
-        "v0.1 Day 3-4 milestone."
+        "World seeding is not implemented yet. See docs/roadmap.md, " "v0.1 Day 3-4 milestone."
     )
 
 

@@ -22,29 +22,29 @@ class NPC:
     age: int
     gender: str
     role: str                        # "回春堂老板娘"
-    
+
     # ===== 不可变人设 · Immutable Personality =====
     personality: Personality         # OCEAN + 武侠维度
     background: str                  # 自然语言出身故事
     secrets: list[Secret]            # 不会主动说，但可能被挖出
     constraints: list[str]           # "不能透露丈夫的死因"等行为底线
     speech_style: SpeechStyle        # 用词、口头禅、方言痕迹
-    
+
     # ===== 可变状态 · Mutable State =====
     current_location_id: str
     mood: Mood                       # valence + arousal
     health: float                    # 0.0 ~ 1.0
     wealth: int                      # 铜钱
     energy: float                    # 0.0 ~ 1.0，影响是否愿意聊天
-    
+
     # ===== 关系网 · Relationships =====
     relationships: dict[str, Relationship]      # other_npc_id -> Relationship
     player_relationship: PlayerRelationship     # 与玩家的专属关系
-    
+
     # ===== 知识 · Knowledge =====
     knowledge: list[Fact]            # 客观知道的事实
     heard_rumors: list[HeardRumor]   # 听说过的传闻（带来源和扭曲）
-    
+
     # ===== 目标 · Goals =====
     short_term_goals: list[Goal]     # "今天卖出 20 副药"
     long_term_goals: list[Goal]      # "查明丈夫死因"
@@ -61,7 +61,7 @@ class Personality:
     extraversion: float              # 外向性
     agreeableness: float             # 宜人性
     neuroticism: float               # 神经质
-    
+
     # 武侠向补充维度
     honesty: float                   # 诚实度，影响是否说谎
     courage: float                   # 胆量，影响面对威胁的反应
@@ -81,23 +81,23 @@ class Personality:
 class Memory:
     id: str
     timestamp: float                 # 游戏内时间
-    
+
     # ===== 客观事实层 · Objective Layer =====
     event_type: EventType            # 枚举：见面/对话/帮助/伤害/目击/听说...
     participants: list[str]          # NPC ID 或 player_id
     location_id: str
     raw_facts: dict                  # 结构化事实，所有目击者共享
-    
+
     # ===== 主观解读层 · Subjective Layer =====
     npc_id: str                      # 这条记忆属于谁
     interpretation: str              # 该 NPC 的主观理解（事发时 LLM 生成并固化）
     emotional_charge: float          # -1.0 ~ +1.0
-    
+
     # ===== 衰减控制 · Decay Control =====
     importance: float                # 0.0 ~ 1.0，决定被想起的概率
     decay_rate: float                # 每游戏天的衰减速率
     last_recalled_at: float          # 最后一次被提取的时间（影响后续衰减）
-    
+
     # ===== 检索辅助 · Retrieval Aids =====
     tags: list[str]                  # ["金钱", "砍价", "首次见面"]
     embedding: Optional[list[float]] # 语义向量（v0.2 启用）
@@ -121,10 +121,10 @@ class Relationship:
     affection: float                 # -1.0 ~ +1.0，整体好感
     trust: float                     # 0.0 ~ 1.0，信任度
     familiarity: float               # 0.0 ~ 1.0，熟悉度
-    
+
     relationship_type: str           # "亲属" / "朋友" / "雇佣" / "宿敌" / "陌生人"
     relationship_label: str          # "侄子" / "旧识" / "杀夫仇人"（叙事性标签）
-    
+
     notable_memory_ids: list[str]    # 该关系中最重要的几段记忆
     last_interaction_at: float
 
@@ -145,11 +145,11 @@ class Location:
     name: str                        # "回春堂"
     type: LocationType               # 药铺/客栈/茶肆/铁铺/...
     description: str                 # 基础环境描述
-    
+
     # 动态状态
     current_npcs: list[str]          # 此刻在场的 NPC ID
     atmosphere: str                  # 当前氛围（由系统根据事件动态更新）
-    
+
     # 关联
     owner_npc_id: Optional[str]      # 老板是谁
     connected_to: list[str]          # 相邻 location ID
@@ -164,14 +164,14 @@ class Item:
     name: str
     type: ItemType                   # 药/食物/武器/书信/钱袋/...
     description: str
-    
+
     # v0.1 不做复杂属性
     base_price: int                  # 基础铜钱价
-    
+
     # 所有权
     owner_id: Optional[str]          # 拥有者（NPC 或 player）
     location_id: Optional[str]       # 如果在地上
-    
+
     # 元信息
     is_unique: bool                  # 独一无二的物件（如某封信）
     metadata: dict                   # 灵活字段（如信件内容、药效说明）
@@ -184,14 +184,14 @@ class Item:
 class Rumor:
     id: str
     created_at: float
-    
+
     # 原始事实
     source_event_id: Optional[str]   # 如果来自真实事件
     original_content: str            # 最初的版本
-    
+
     # 当前在 NPC 之间的传播态
     spread_chain: list[RumorSpread]  # 谁传给谁，每次扭曲了什么
-    
+
     veracity: float                  # 真实度（系统知道，NPC 不知道）
     spice_level: float               # 八卦程度，影响传播速度
 ```
@@ -206,12 +206,12 @@ class ActionRecord:
     action_type: str                 # "SpreadRumor", "BuyItem"...
     actor_id: str                    # 执行者（player 或 npc_*）
     parameters: dict
-    
+
     # 执行结果
     succeeded: bool
     side_effects_applied: list[dict] # 实际写入的副作用清单
     memories_generated: list[str]    # 生成了哪些 Memory
-    
+
     # 审计
     initiated_by: str                # "player_input" / "world_tick" / "llm_decision"
     llm_reasoning: Optional[str]     # 如果由 LLM 决策，附上推理过程

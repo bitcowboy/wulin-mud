@@ -81,7 +81,7 @@ class ActionType(ABC):
     def validate(
         self,
         params: dict[str, Any],
-        world: "WorldState",
+        world: WorldState,
         actor_id: str,
     ) -> ValidationResult:
         """Check pre-conditions. Return reason if invalid."""
@@ -94,7 +94,7 @@ class ActionType(ABC):
     async def execute(
         self,
         params: dict[str, Any],
-        world: "WorldState",
+        world: WorldState,
         actor_id: str,
     ) -> ActionResult:
         """Apply side effects, generate memories, return result."""

@@ -51,7 +51,7 @@ personality:
   extraversion: 0.45         # 不主动社交，但不冷淡
   agreeableness: 0.55        # 表面客气，内心有自己的判断
   neuroticism: 0.65          # 丧夫后变得敏感多虑
-  
+
   # 武侠向
   honesty: 0.8               # 不爱说谎，但会保留信息
   courage: 0.7               # 一个寡居女人能撑起药铺，胆色不小
@@ -65,7 +65,7 @@ background: |
   二十年前丈夫在去州府进药材的路上被人所杀，凶手至今未明。
   当时她已怀孕，独自把儿子陈小满拉扯大。
   小满三年前去京畿方向学医，每月有信回来。
-  
+
   这二十年她把回春堂打理得镇上数一数二，谁家有难处找她抓药，
   从来不会因为铜钱不够把人推出门。但江湖人她格外警惕——
   她至今怀疑丈夫的死与江湖中人有关。
@@ -75,7 +75,7 @@ secrets:
     content: 丈夫死时身上有刀伤，刀法她认得是某种正派路数，但她没声张
     discovery_difficulty: 0.85
     consequence_if_revealed: 会主动向玩家求助查清真相，关系跃升
-    
+
   - id: secret_medical_skill
     content: 她其实懂一些点穴疗伤之术，远超一般药商
     discovery_difficulty: 0.6
@@ -104,35 +104,35 @@ initial_relationships:
     familiarity: 1.0
     relationship_type: 亲属
     relationship_label: 独子
-    
+
   npc_wang_laojiu:        # 茶肆老九
     affection: 0.4
     trust: 0.5
     familiarity: 0.9
     relationship_type: 旧识
     relationship_label: 镇上老相识，互相照应
-    
+
   npc_er_lang:            # 镖局二郎，远房侄子
     affection: 0.5
     trust: 0.3
     familiarity: 0.8
     relationship_type: 亲属
     relationship_label: 不成器的远房侄子，恨铁不成钢
-    
+
   npc_zhao_zhanggui:      # 镖局赵掌柜
     affection: 0.3
     trust: 0.2
     familiarity: 0.7
     relationship_type: 邻里
     relationship_label: 心里隐隐怀疑他身份不简单
-    
+
   npc_liu_niangzi:        # 客栈柳娘子
     affection: 0.2
     trust: 0.15
     familiarity: 0.6
     relationship_type: 邻里
     relationship_label: 表面客气，从不深交
-    
+
   npc_shen_xiansheng:     # 药材商沈先生
     affection: 0.5
     trust: 0.4
@@ -155,7 +155,7 @@ initial_heard_rumors:
 short_term_goals:
   - 今天卖出至少 200 文药
   - 等小满本月的信
-  
+
 long_term_goals:
   - 查明丈夫死因
   - 让小满学成归来，安稳成家
