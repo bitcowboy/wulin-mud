@@ -122,30 +122,36 @@ def _parse_judge_output(text: str) -> JudgeReply:
         reasoning = str(obj.get("reasoning", "")).strip()
         return JudgeReply(score=score, reasoning=reasoning, raw=raw)
 
-    # Last resort: pull the integer out of "score": N anywhere in the text.
-    # Accepts Chinese full-width colon "：" and either quote style.
-    fallback = re.search(
+    # Last-resort regex extraction. We try in decreasing specificity:
+    #   1. "score": N        — the JSON shape, broken by something
+    #   2. score：N           — Chinese full-width colon
+    #   3. 评分 N / 给 N 分    — Chinese natural-language scoring
+    #   4. just a bare 1-5 if the text is short
+    score_patterns = [
         r'["“]?score["”]?\s*[:：=]\s*(\d+)',
-        raw,
-    )
-    if fallback:
+        r"评\s*分?\s*[:：=]?\s*(\d+)",
+        r"给\s*(\d+)\s*分",
+        r"(\d+)\s*分\b",
+    ]
+    for pattern in score_patterns:
+        m = re.search(pattern, raw)
+        if not m:
+            continue
         try:
-            score = int(fallback.group(1))
-            if 1 <= score <= 5:
-                # Try to also pull a reasoning string nearby — best effort.
-                reasoning_match = re.search(
-                    r'["“]?reasoning["”]?\s*[:：=]\s*["“]?(.+?)["”]?\s*[,}\n]',
-                    raw,
-                    re.DOTALL,
-                )
-                reasoning = (
-                    reasoning_match.group(1).strip()
-                    if reasoning_match
-                    else "(extracted from non-JSON)"
-                )
-                return JudgeReply(score=score, reasoning=reasoning, raw=raw)
+            score = int(m.group(1))
         except ValueError:
-            pass
+            continue
+        if not (1 <= score <= 5):
+            continue
+        reasoning_match = re.search(
+            r'["“]?reasoning["”]?\s*[:：=]\s*["“]?(.+?)["”]?\s*[,}\n]',
+            raw,
+            re.DOTALL,
+        )
+        reasoning = (
+            reasoning_match.group(1).strip() if reasoning_match else "(extracted from non-JSON)"
+        )
+        return JudgeReply(score=score, reasoning=reasoning, raw=raw)
 
     return JudgeReply(
         score=0,
@@ -178,4 +184,10 @@ async def evaluate_soft(
         f"[{assertion.type.value}] score={parsed.score}/5 "
         f"(threshold {assertion.threshold}). reasoning: {parsed.reasoning}"
     )
+    # If parsing failed entirely (score=0), surface the raw output
+    # so the user can see what the judge actually produced. Cap at
+    # 400 chars to keep reports readable.
+    if parsed.score == 0:
+        snippet = parsed.raw[:400] + ("…" if len(parsed.raw) > 400 else "")
+        detail += f"\n     raw judge output: {snippet!r}"
     return AssertionResult(passed=passed, detail=detail, score=float(parsed.score))
