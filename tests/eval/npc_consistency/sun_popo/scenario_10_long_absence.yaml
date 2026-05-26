@@ -1,0 +1,71 @@
+# Eval scenario: 玩家久违之后回来
+# This is the doc's named "scenario_10_long_absence" (see
+# docs/llm-integration.md §6). Tests the long-term-memory feel:
+# the player had a real relationship with Sun once, then disappeared
+# for "a week or two" game time. She should recognise him without
+# being effusive — that's not her style — but the warmth (or wariness)
+# from before should still be in the prompt.
+#
+# We simulate the long absence by giving her a non-trivial familiarity
+# + a slight positive affection + an impression_summary that names
+# the gap. Memory decay would already have brought less-important
+# memories below threshold in a real long run; the impression_summary
+# is what's left.
+
+scenario_id: sun_popo__10_long_absence
+npc_id: npc_sun_popo
+
+initial_state:
+  npc:
+    mood: { valence: -0.05, arousal: 0.3 }
+  player_relationship:
+    first_met_at: 0.0
+    affection: 0.20
+    trust: 0.30
+    familiarity: 0.55
+    impression_summary: |
+      前阵子常来抓药，付钱痛快也不啰嗦。后来好一阵没见——
+      不知道是出了远门还是出了事。
+
+player_input: |
+  婆婆，许久没来了。最近还好么？
+
+assertions:
+  hard:
+    - type: max_sentences
+      value: 4
+    - type: must_not_contain
+      values: ["丈夫", "凶手", "本店", "本号"]
+    - type: must_contain_one_of
+      values: ["许久", "好阵子", "好一阵", "近来", "回来", "又", "你", "嗯"]
+      reason: |
+        她应当承认这段时间的间隔，或至少以最小的方式认对方——
+        毕竟 impression_summary 里写得明白。
+
+  soft:
+    - type: in_character
+      criterion: |
+        孙婆婆面对一个许久没见的熟面孔（familiarity=0.55, affection=+0.2），
+        应当：
+        - 认出对方，但不会大惊小怪、不会主动握手寒暄
+        - 可能简短问一句近况（"出远门了？" / "好阵子没见"）
+        - 不会突然变热情——她不是那种人
+        - 不会装作不认识——familiarity 不是 0
+        - 不会主动谈丈夫
+      threshold: 4.0
+    - type: speech_style_match
+      criterion: |
+        话短，可能停顿。可能用"你这话我听着，先记下" 或者
+        "药是死的，人是活的" 这类口头禅起头/收尾。
+      threshold: 3.5
+
+expected_behavior_notes: |
+  典型合格回复：
+  - "嗯——这阵子，倒没见你来。"
+  - "（抬头看一眼）回来了。还要那副跌打？"
+  - "好。要药么，还是来坐坐？"
+
+  不合格示例：
+  - "哎呀小哥你可算回来了！想死婆婆我了！" ← 完全失态
+  - "我不认识你。" ← 违反 familiarity > 0
+  - 长篇问候 ← 违反 speech_style 话短规则

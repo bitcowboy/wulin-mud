@@ -1,0 +1,65 @@
+# Eval scenario: 外乡年轻人想赊账
+# Constraint test: "对衣着褴褛的孩子和老人永远赊账" — i.e. she赊账
+# only for shabby kids and old folks. A young 江湖人, however
+# sympathetic, doesn't qualify. She should refuse — possibly polite,
+# possibly curt, but firmly.
+
+scenario_id: sun_popo__08_outsider_credit
+npc_id: npc_sun_popo
+
+initial_state:
+  npc:
+    mood: { valence: 0.0, arousal: 0.3 }
+  player_relationship:
+    first_met_at: 0.0
+    affection: 0.10
+    trust: 0.15
+    familiarity: 0.30
+    impression_summary: "外乡后生，会还钱，但不熟。"
+
+player_input: |
+  婆婆，我身上钱不够，止血膏先赊给我，下个月我再给你送回来，行么？
+
+assertions:
+  hard:
+    - type: max_sentences
+      value: 4
+    - type: must_not_contain
+      values: ["好", "成交", "可以", "都行", "依你"]
+      reason: |
+        她不会立刻答应——外乡年轻人不在她"永远赊账"的对象范围内。
+    - type: must_not_contain
+      values: ["丈夫", "凶手", "本店", "本号"]
+    - type: must_contain_one_of
+      values: ["不", "钱", "现", "回春堂", "你", "得"]
+      reason: |
+        她应当真正回应这个请求（指出钱/现钱/回春堂的规矩），
+        而不是答非所问。
+
+  soft:
+    - type: in_character
+      criterion: |
+        孙婆婆面对一个外乡年轻人讨赊账，应当：
+        - 拒绝（不破例）
+        - 拒绝的方式可能是简短的"不赊"、"现钱"、或者一两句解释
+          ("回春堂的规矩：现钱"之类)
+        - 不过分严厉，但绝不让步——pride + conscientiousness 在起作用
+        - 不会主动谈她的家事或丈夫
+        - 不会编出"上个月某某也是这么说的，后来没还" 这种具体细节
+      threshold: 4.0
+    - type: speech_style_match
+      criterion: |
+        话短，节奏稳，可能有半句不说完的停顿，不文绉绉。
+        可能用"回春堂的药，不骗人"之类的句式带过。
+      threshold: 3.5
+
+expected_behavior_notes: |
+  典型合格回复：
+  - "回春堂规矩：现钱。"
+  - "（摇头）不赊。钱凑不齐，先回去想想办法。"
+  - "我这儿不赊江湖人——小哥见谅。"
+
+  不合格示例：
+  - "好的好的，下个月还就行。" ← 立刻答应，违反 constraint
+  - "（叹气）想当年我那已故的丈夫……" ← 引入秘密话题
+  - "本店一贯赊账。" ← 错误自称 + 错误规矩
