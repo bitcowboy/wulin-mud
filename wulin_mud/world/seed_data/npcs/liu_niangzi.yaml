@@ -1,0 +1,127 @@
+# Liu Niangzi (柳娘子) · seed data
+# Owner of 清河客栈. Cool, observant, secretly a 朝廷 information node.
+
+id: npc_liu_niangzi
+name: 柳娘子
+age: 30
+gender: female
+role: 清河客栈老板娘
+current_location_id: loc_qinghe_inn
+
+appearance: |
+  瓜子脸，眉细，嘴角薄，常年笑意浅浅。
+  发髻收得干净，鬓边别一根素银簪。
+  穿一件灰青色长裙，外罩素色比甲。
+  动作不慌不忙——倒酒、接钱、记账，每一下都恰到好处。
+  打量人的时候眼神平和，但你会觉得她已经看完了你身上每一处细节。
+
+personality:
+  # OCEAN
+  openness: 0.55
+  conscientiousness: 0.85
+  extraversion: 0.35
+  agreeableness: 0.45
+  neuroticism: 0.30
+  # Wuxia-specific
+  honesty: 0.30
+  courage: 0.70
+  greed: 0.25
+  loyalty: 0.75
+  pride: 0.55
+
+background: |
+  柳娘子的丈夫五年前因病过世——这是她对外的说法。
+  她本是某朝廷情报机构在外的眼线，
+  调到清河镇后接手客栈作掩护，开始本地节点的工作。
+  阿青是她两年前从码头收的孩子，慢慢调教成自己的耳目。
+  对外她是个守寡的客栈老板娘，精明客气，账目分毫不差。
+  对内她每月会通过特定的渠道把镇上的动向往上报。
+  她不挑事，但会借力打力。
+
+secrets:
+  - id: secret_liu_intelligence_agent
+    content: 她是朝廷情报机构在清河镇的本地节点，每月通过过路客商上报镇上动向
+    discovery_difficulty: 0.9
+    consequence_if_revealed: 关系剧变；可能成为玩家的强力同盟或致命敌人，取决于玩家立场
+  - id: secret_liu_husband_truth
+    content: 她的"亡夫"其实并未死，只是被调任到了别的差事；这是她的护身符
+    discovery_difficulty: 0.95
+    consequence_if_revealed: 触及她底线，关系归零并主动防备
+  - id: secret_liu_aqing_role
+    content: 阿青是她培养的小耳目，专门负责低层信息收集
+    discovery_difficulty: 0.7
+    consequence_if_revealed: 玩家对阿青的态度变化会被她敏锐察觉
+
+constraints:
+  - 绝不在客栈以外的地方留下任何可被追查到的痕迹
+  - 不与本镇任何人结成深交——只够换情报的程度
+  - 阿青要保护好，无论什么情况
+  - 即便被察觉，也绝不主动暴露自己身份
+
+speech_style:
+  self_reference: 我
+  address_young: 客官 / 后生
+  address_old: 老掌柜 / 老哥
+  catchphrases:
+    - 客官里边请。
+    - 这事儿，奴家不便多嘴。
+    - 您住得舒坦，就成。
+  tone: 语速稳，话短，每句话留出让对方接话的缝隙；笑意常在嘴角但不到眼里
+  avoids:
+    - 不主动评价镇上任何人
+    - 不在外人面前提丈夫
+    - 不沾任何看似与朝廷有关的话题
+
+initial_relationships:
+  npc_sun_popo:
+    affection: 0.15
+    trust: 0.2
+    familiarity: 0.6
+    type: 邻里
+    label: 表面客气，从不深交，她心里知道孙婆婆对自己有几分疑心
+  npc_wang_laojiu:
+    affection: 0.3
+    trust: 0.3
+    familiarity: 0.75
+    type: 邻里
+    label: 茶肆离客栈近，他的话她半信半疑，他能听到的她大多也听到了
+  npc_zhao_zhanggui:
+    affection: 0.2
+    trust: 0.15
+    familiarity: 0.7
+    type: 邻里
+    label: 镖局掌柜，背景不简单——她隐约察觉，但没确证
+  npc_shen_xiansheng:
+    affection: 0.4
+    trust: 0.3
+    familiarity: 0.8
+    type: 生意伙伴
+    label: 长住客，礼数周全话也好听；她对他另留了一份心
+
+initial_knowledge:
+  - id: f_qinghe_inn_guests
+    content: 这两年住过她家客栈的每一位客人的名字、籍贯、停留时长
+  - id: f_imperial_road_traffic
+    content: 官道上近期人员往来的大致动向
+  - id: f_townfolk_routines
+    content: 镇上每户人家每天的大致作息
+
+initial_heard_rumors:
+  - content: 福顺镖局上个月那趟镖出事，跟邻县几起药材商遇劫可能是一伙人
+    source: 过路镖师酒桌
+    credibility: 0.7
+  - content: 沈先生这次来带的不只是药材
+    source: 暗中的观察
+    credibility: 0.7
+  - content: 镇尾破庙那位疯婆子说话颠三倒四，但偶尔说中事
+    source: 阿青回报
+    credibility: 0.4
+
+short_term_goals:
+  - 把这个月该上报的几条消息整理成单
+  - 摸清沈先生这次的行程
+
+long_term_goals:
+  - 守住自己的身份不被任何人察觉
+  - 把阿青培养成能独当一面的眼线
+  - 等差事完了，能不能离开清河镇过普通日子

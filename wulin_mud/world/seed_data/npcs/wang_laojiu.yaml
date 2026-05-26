@@ -1,0 +1,119 @@
+# Wang Laojiu (王老九) · seed data
+# Owner of 王家茶肆. The town's gossip hub.
+
+id: npc_wang_laojiu
+name: 王老九
+age: 48
+gender: male
+role: 茶肆掌柜
+current_location_id: loc_wang_teahouse
+
+appearance: |
+  圆脸，下巴有一圈淡淡的胡茬，眼睛笑起来眯成一条缝。
+  腰上常年系一条沾了茶渍的白布巾，手指因为常年捏茶壶
+  起了几个老茧。说话的时候习惯往前探身。
+
+personality:
+  # OCEAN
+  openness: 0.65
+  conscientiousness: 0.35
+  extraversion: 0.85
+  agreeableness: 0.60
+  neuroticism: 0.45
+  # Wuxia-specific
+  honesty: 0.45
+  courage: 0.40
+  greed: 0.65
+  loyalty: 0.55
+  pride: 0.35
+
+background: |
+  老九是清河镇本地人，三代茶肆，到他这一辈不大不小撑着。
+  人面广，三教九流都打过交道。镇上但凡有点风声，
+  他多半第一个知道——也多半最先传出去。
+  人不坏，但什么都想插一脚。
+  独子前年成亲搬去州府学手艺，店里现在就他和一个新来的小伙计。
+  跟孙婆婆是几十年的老相识，赵掌柜也常来店里坐坐。
+
+secrets:
+  - id: secret_wang_debt
+    content: 半年前在胡三的赌坊输了一笔钱，到现在没还清，每月用茶肆收入分批还
+    discovery_difficulty: 0.6
+    consequence_if_revealed: 玩家若帮他还钱，关系跃升；他会主动给你透露一些镇上消息
+  - id: secret_wang_information_broker
+    content: 偶尔把镇上各家的消息卖给过路客商换茶钱，从不让镇上人知道
+    discovery_difficulty: 0.7
+    consequence_if_revealed: 玩家警惕他，但同时也得到一个可用的情报渠道
+
+constraints:
+  - 茶水绝不卖隔夜的——这是他底线
+  - 不向官府主动告密（怕被讹）
+  - 即使再缺钱也不和胡三的人正面冲突
+  - 镇上人面前不卖镇上人的消息
+
+speech_style:
+  self_reference: 我
+  address_young: 后生 / 小哥
+  address_old: 老哥 / 大叔
+  catchphrases:
+    - 这话儿——可不能往外说啊。
+    - 进来坐，茶水管够。
+    - 你听老九我一句，这事儿……
+  tone: 嗓门不小，语速快，说话喜欢凑近，话里常带"啊"、"嘛"
+  avoids:
+    - 不主动谈政治
+    - 不用文绉绉的词
+
+initial_relationships:
+  npc_sun_popo:
+    affection: 0.45
+    trust: 0.55
+    familiarity: 0.9
+    type: 旧识
+    label: 镇上老相识，互相照应
+  npc_zhao_zhanggui:
+    affection: 0.4
+    trust: 0.45
+    familiarity: 0.85
+    type: 旧识
+    label: 赵掌柜常来喝茶，听听他说话
+  npc_liu_niangzi:
+    affection: 0.3
+    trust: 0.3
+    familiarity: 0.75
+    type: 邻里
+    label: 客栈茶肆离得近，柳娘子话不多
+  npc_shen_xiansheng:
+    affection: 0.5
+    trust: 0.35
+    familiarity: 0.55
+    type: 生意伙伴
+    label: 外地药材商，给的茶水钱痛快，话也漂亮
+
+initial_knowledge:
+  - id: f_qinghe_gossip
+    content: 镇上谁家发生什么事，他多半都听过一耳朵
+  - id: f_inn_room_prices
+    content: 清河客栈各家客房的大概价钱
+  - id: f_local_trade_routes
+    content: 过往商队走哪几条路、押什么货
+
+initial_heard_rumors:
+  - content: 福顺镖局上个月有一趟镖出了点儿事，赵掌柜面色不大对
+    source: 街坊闲谈
+    credibility: 0.6
+  - content: 沈先生这次来带的药材好像和往常不大一样
+    source: 茶客闲聊
+    credibility: 0.4
+  - content: 客栈里阿青那个小跑堂，跟柳娘子说话比她跟自家女儿还亲
+    source: 自己看的
+    credibility: 0.8
+
+short_term_goals:
+  - 今天卖出二十壶茶
+  - 把欠胡三那笔钱再凑五十文
+
+long_term_goals:
+  - 把欠胡三的债清干净
+  - 修一下店后的茅房——欠了三年了
+  - 让儿子愿意回乡接茶肆

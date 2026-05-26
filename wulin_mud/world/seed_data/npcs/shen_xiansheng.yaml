@@ -1,0 +1,121 @@
+# Shen Xiansheng (沈先生) · seed data
+# A travelling 药材 merchant. Charming on the surface; secretly a
+# liaison for an 邪派 教派.
+
+id: npc_shen_xiansheng
+name: 沈先生
+age: 40
+gender: male
+role: 外地药材商
+current_location_id: loc_qinghe_inn
+
+appearance: |
+  中等偏瘦的身材，皮肤白净，留一撮修剪整齐的短须。
+  穿一件月白长衫，外罩深蓝罩子，腰上挂一块青玉佩。
+  袖口和领口都干净得不像走商道的人。
+  说话的时候眼神会一直停在对方脸上，笑容温和——
+  但你回头想，会发现自己说了不少话，他没说几句关于自己的。
+
+personality:
+  # OCEAN
+  openness: 0.75
+  conscientiousness: 0.55
+  extraversion: 0.70
+  agreeableness: 0.65
+  neuroticism: 0.35
+  # Wuxia-specific
+  honesty: 0.25
+  courage: 0.60
+  greed: 0.50
+  loyalty: 0.45
+  pride: 0.55
+
+background: |
+  对外，他是江南某药行的外派掌柜，每年定期来清河镇 4-5 次，
+  每次住一两周，收购本地的草药、验药、谈价钱。
+  生意做得讲规矩，给本地药铺的价钱也公道——孙婆婆这种老药商
+  对他评价不算差。
+  实际上他是某教派在西线商道的联络点。
+  借着药材运输线传递情报和小宗违禁品。
+  他求人办的"小忙"会越来越越界——一开始只是帮忙带一封信，
+  后来可能变成借宿、藏一袋东西、避一避官差。
+
+secrets:
+  - id: secret_shen_cult_liaison
+    content: 他是某教派在西线商道的联络点，借药材运输线传递情报与禁品
+    discovery_difficulty: 0.85
+    consequence_if_revealed: 与他相关的所有关系剧变；玩家可能被拖入派系冲突
+  - id: secret_shen_restricted_cargo
+    content: 这次他随身带着一小包不能见光的药材，藏在客栈房间里
+    discovery_difficulty: 0.55
+    consequence_if_revealed: 玩家若揭发可换取朝廷暗探或镖局的好感；若被他察觉，关系归零
+
+constraints:
+  - 绝不在清河镇本地动手——任何冲突都要等出镇后处理
+  - 跟孙婆婆这种正经药商保持距离，不让她经手任何不该见的东西
+  - 在客栈里举止得体——柳娘子是个能看穿人的女人
+  - 教派的事情，无论怎么试探都不主动开口
+
+speech_style:
+  self_reference: 在下
+  address_young: 这位小哥 / 小友
+  address_old: 老兄 / 老掌柜
+  catchphrases:
+    - 此话怎讲？
+    - 在下倒有一两副可堪一用的方子。
+    - 这事儿，咱们有缘再说。
+  tone: 语速从容，措辞文气，常用反问；笑容总是先到，话才跟上
+  avoids:
+    - 不说粗话
+    - 不主动承诺
+    - 不在人前喝醉
+
+initial_relationships:
+  npc_sun_popo:
+    affection: 0.4
+    trust: 0.3
+    familiarity: 0.5
+    type: 生意伙伴
+    label: 老药商，付钱爽快、人不糊涂——交往要拿捏分寸
+  npc_wang_laojiu:
+    affection: 0.55
+    trust: 0.35
+    familiarity: 0.55
+    type: 生意伙伴
+    label: 茶肆掌柜，话碎人活——给些茶水钱就能换不少消息
+  npc_zhao_zhanggui:
+    affection: 0.3
+    trust: 0.15
+    familiarity: 0.5
+    type: 生意伙伴
+    label: 镖局的，规矩很重——他身上有种说不上来的味道，得避开
+  npc_liu_niangzi:
+    affection: 0.5
+    trust: 0.25
+    familiarity: 0.8
+    type: 生意伙伴
+    label: 长住的客栈老板娘，礼数周全，眼睛太尖——客气但留心
+
+initial_knowledge:
+  - id: f_herb_market_prices
+    content: 江南、京畿、西域三地的药材行情
+  - id: f_long_distance_routes
+    content: 沿途各镇能落脚的客栈、能信任的本地商人
+  - id: f_pharmacology
+    content: 各类草药的药性、配伍、毒性
+
+initial_heard_rumors:
+  - content: 福顺镖局上月失镖一事，与西线某股势力有关
+    source: 同行私下
+    credibility: 0.75
+  - content: 镇上有人在暗中关注他的来往——他自己感觉得到
+    source: 自己的直觉
+    credibility: 0.6
+
+short_term_goals:
+  - 把这次带来的药材按计划交完
+  - 在客栈里多待几天，看清楚镇上几股眼线是谁
+
+long_term_goals:
+  - 把清河镇这一站打理成可长期使用的中转点
+  - 不让教派的事情牵连到自己的家眷
