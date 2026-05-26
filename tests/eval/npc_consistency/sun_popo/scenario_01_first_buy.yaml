@@ -35,8 +35,12 @@ assertions:
       values: ["本店", "本号", "鄙人"]
       reason: "她自称'我'，不用商号自称"
     - type: must_contain_one_of
-      values: ["我", "婆婆"]
-      reason: "至少有一次自称"
+      values: ["止血", "药", "膏", "伤", "有", "无"]
+      reason: |
+        她必须真正回应玩家的问题——确认有/无、谈到药或伤情。
+        不强制自称（"我"/"婆婆"）：她的 speech_style 明确写"常有
+        半句不说完的停顿"，全是动作 + 短答的回合是合规范的。
+        商号自称如"本店"已被另一条 must_not_contain 卡住。
 
   soft:
     # LLM-as-judge, scored 1-5, threshold 3.5.
