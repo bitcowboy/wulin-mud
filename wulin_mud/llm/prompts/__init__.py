@@ -9,6 +9,7 @@ Templates live in their own subpackage so that:
   strings. No I/O. Easy to test by string assertion.
 """
 
+from wulin_mud.llm.prompts.dialogue import build_dialogue_prompt
 from wulin_mud.llm.prompts.interpretation import build_interpretation_prompt
 
-__all__ = ["build_interpretation_prompt"]
+__all__ = ["build_dialogue_prompt", "build_interpretation_prompt"]
