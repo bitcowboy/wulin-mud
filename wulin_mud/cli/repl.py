@@ -54,6 +54,7 @@ HELP_TEXT = """\
   /go <地名>             去某地（相邻才能去）
   /greet [<姓名>]        打招呼
   /buy <物品> [<价钱>]   买东西（默认按基础价）
+  /talk <姓名> <内容>    指明对谁说话（房里多人时用）
   /offend <姓名> [<事>]  冒犯某人
   /tick [<次数>]         手动让世界走一段时间（心情/记忆衰减）
   /help                  显示帮助
@@ -83,6 +84,11 @@ class Repl:
     def __init__(self, session: Session, llm: LLMProvider) -> None:
         self._session = session
         self._llm = llm
+        # The NPC the player has "addressed" most recently. Set by
+        # /greet, /offend, /talk, and successful bare-text Talks.
+        # Cleared by /go (the player walked away). Bare text in a
+        # multi-NPC room falls through to this target.
+        self._current_talk_target: str | None = None
 
     # ------------------------------------------------------------------
     # Lookups
@@ -205,6 +211,8 @@ class Repl:
         result = await self._run_action("MoveTo", {"destination_id": target.id})
         if not result.succeeded:
             return RenderedTurn(output=f"去不了：{result.narrative_hint}", action_result=result)
+        # Walking away ends the current conversation thread.
+        self._current_talk_target = None
         # Show the new room after moving.
         look = await self.cmd_look([])
         return RenderedTurn(output=look.output, action_result=result)
@@ -216,6 +224,8 @@ class Repl:
         result = await self._run_action("Greet", {"target_id": npc.id})
         if not result.succeeded:
             return RenderedTurn(output=f"招呼没打成：{result.narrative_hint}", action_result=result)
+        # Bare text from now on goes to this NPC until you walk away.
+        self._current_talk_target = npc.id
         return RenderedTurn(output=f"你向 {npc.name} 点了点头。", action_result=result)
 
     async def cmd_offend(self, args: list[str]) -> RenderedTurn:
@@ -232,6 +242,8 @@ class Repl:
         result = await self._run_action("OffendNPC", params)
         if not result.succeeded:
             return RenderedTurn(output=f"动作没做成：{result.narrative_hint}", action_result=result)
+        # You're now arguing with this person; subsequent bare text goes to them.
+        self._current_talk_target = npc.id
         return RenderedTurn(output=f"你冒犯了 {npc.name}。", action_result=result)
 
     async def cmd_buy(self, args: list[str]) -> RenderedTurn:
@@ -253,16 +265,51 @@ class Repl:
         return RenderedTurn(output=f"你花了 {price} 文，买下了 {item.name}。", action_result=result)
 
     async def cmd_talk(self, content: str) -> RenderedTurn:
+        """Bare-text path. Routes to the only NPC present, or the
+        last-addressed NPC if there are several."""
         npcs = self._npcs_here()
         if not npcs:
             return RenderedTurn(output="这里没有人可以说话。")
-        if len(npcs) > 1:
+
+        target = None
+        if len(npcs) == 1:
+            target = npcs[0]
+        elif self._current_talk_target is not None:
+            for n in npcs:
+                if n.id == self._current_talk_target:
+                    target = n
+                    break
+
+        if target is None:
             names = "、".join(n.name for n in npcs)
-            return RenderedTurn(output=f"这里有好几个人（{names}）。用 `/greet <姓名>` 先指明。")
-        target = npcs[0]
+            return RenderedTurn(
+                output=(
+                    f"这里有好几个人（{names}）。\n"
+                    "用 `/greet <姓名>` 先指明，或者 `/talk <姓名> <要说的话>`。"
+                )
+            )
+
+        return await self._run_talk(target, content)
+
+    async def cmd_talk_explicit(self, args: list[str]) -> RenderedTurn:
+        """`/talk <name> <content>` — explicit form. Doesn't require
+        a prior /greet."""
+        if len(args) < 2:
+            return RenderedTurn(output="用法：/talk <姓名> <要说的话>")
+        name, *rest = args
+        npc = self._resolve_npc(name)
+        if npc is None:
+            return RenderedTurn(output=f"这里没有叫 {name!r} 的人。")
+        content = " ".join(rest)
+        return await self._run_talk(npc, content)
+
+    async def _run_talk(self, target: NPC, content: str) -> RenderedTurn:
+        """Shared body for bare-text Talk and explicit /talk."""
         result = await self._run_action("Talk", {"target_id": target.id, "content": content})
         if not result.succeeded:
             return RenderedTurn(output=f"对方没接话：{result.narrative_hint}", action_result=result)
+        # Future bare text stays on this NPC.
+        self._current_talk_target = target.id
         reply = result.narrative_hint or "（沉默）"
         return RenderedTurn(output=f"{target.name}：{reply}", action_result=result)
 
@@ -361,6 +408,7 @@ class Repl:
             "greet": Repl.cmd_greet,
             "offend": Repl.cmd_offend,
             "buy": Repl.cmd_buy,
+            "talk": Repl.cmd_talk_explicit,
             "tick": Repl.cmd_tick,
             "help": Repl.cmd_help,
             "quit": Repl.cmd_quit,

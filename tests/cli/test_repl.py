@@ -221,6 +221,75 @@ async def test_bad_quoting_is_handled(repl: Repl) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Sticky talk target
+# ---------------------------------------------------------------------------
+
+
+async def test_greet_sets_talk_target_in_multi_npc_room(
+    repl: Repl, wang_in_pharmacy: Session, llm: FakeProvider
+) -> None:
+    """The reported bug: /greet <X> then bare text should go to X."""
+    llm.queue("打个招呼。")  # interpretation for Greet
+    await repl.handle("/greet 王老九")
+
+    # Bare text — multi-NPC room. Should target wang (just greeted).
+    llm.queue("不该笑话回春堂的药。", "他还在念叨上回那事呢。")
+    turn = await repl.handle("先生看上去真精神啊")
+    assert turn.action_result is not None
+    assert turn.action_result.succeeded
+    assert "王老九" in turn.output  # NOT the disambiguation error
+
+
+async def test_go_clears_talk_target(
+    repl: Repl, wang_in_pharmacy: Session, llm: FakeProvider
+) -> None:
+    """Walking away ends the conversational thread."""
+    llm.queue("打个招呼。")
+    await repl.handle("/greet 王老九")
+    await repl.handle("/go 清河主街")
+    await repl.handle("/go 回春堂")
+
+    # Now bare text in a multi-NPC room should ask to disambiguate.
+    turn = await repl.handle("各位好")
+    assert turn.action_result is None
+    assert "好几个" in turn.output
+
+
+async def test_offend_also_sets_talk_target(
+    repl: Repl, wang_in_pharmacy: Session, llm: FakeProvider
+) -> None:
+    """After insulting someone, bare text continues the argument with them."""
+    llm.queue("这小子嘴上没分寸。")  # interpretation for OffendNPC
+    await repl.handle("/offend 王老九 嘲讽他的茶水")
+    llm.queue("接着说啊，我倒看你怎么说下去。", "他还在挑事。")
+    turn = await repl.handle("茶水还不算贵。")
+    assert turn.action_result is not None and turn.action_result.succeeded
+    assert "王老九" in turn.output
+
+
+async def test_explicit_talk_command_targets_by_name(
+    repl: Repl, wang_in_pharmacy: Session, llm: FakeProvider
+) -> None:
+    """/talk <name> <content> works without a prior /greet."""
+    llm.queue("这小哥嘴甜。", "新面孔。")
+    turn = await repl.handle("/talk 王老九 茶水可还便宜？")
+    assert turn.action_result is not None and turn.action_result.succeeded
+    assert "王老九" in turn.output
+
+
+async def test_explicit_talk_without_content_errors(repl: Repl, wang_in_pharmacy: Session) -> None:
+    turn = await repl.handle("/talk 王老九")
+    assert turn.action_result is None
+    assert "用法" in turn.output
+
+
+async def test_explicit_talk_to_unknown_name_errors(repl: Repl, wang_in_pharmacy: Session) -> None:
+    turn = await repl.handle("/talk 张三 你好")
+    assert turn.action_result is None
+    assert "张三" in turn.output
+
+
+# ---------------------------------------------------------------------------
 # Multi-turn smoke
 # ---------------------------------------------------------------------------
 
