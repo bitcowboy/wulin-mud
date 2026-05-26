@@ -119,7 +119,7 @@ class Greet(ActionType):
 
         # 2) Generate witness memories.
         witnesses = world.witnesses_for(WitnessesRule.SAME_LOCATION, location_id=location_id)
-        memory_ids = world.record_witnessed_event(
+        memory_ids = await world.record_witnessed_event(
             witnesses=witnesses,
             event_type=EventType.MET,
             participants=[actor_id, target_id],

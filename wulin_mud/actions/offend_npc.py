@@ -143,7 +143,7 @@ class OffendNPC(ActionType):
         raw_facts: dict[str, Any] = {"offender": actor_id, "target": target_id}
         if description:
             raw_facts["description"] = description
-        memory_ids = world.record_witnessed_event(
+        memory_ids = await world.record_witnessed_event(
             witnesses=witnesses,
             event_type=EventType.OFFENDED,
             participants=[actor_id, target_id],

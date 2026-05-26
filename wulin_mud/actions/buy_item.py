@@ -193,7 +193,7 @@ class BuyItem(ActionType):
 
         # 4) Witness memories.
         witnesses = world.witnesses_for(WitnessesRule.SAME_LOCATION, location_id=location_id)
-        memory_ids = world.record_witnessed_event(
+        memory_ids = await world.record_witnessed_event(
             witnesses=witnesses,
             event_type=EventType.BOUGHT,
             participants=[actor_id, owner.id],
