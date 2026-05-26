@@ -62,13 +62,9 @@ async def execute_action(
 
     caller = _classify_caller(actor_id)
     if caller not in action.callable_by:
-        raise ActionCallerNotPermitted(
-            f"action {action_name!r} not callable by {caller.value!r}"
-        )
+        raise ActionCallerNotPermitted(f"action {action_name!r} not callable by {caller.value!r}")
 
-    world = WorldState(
-        session, now=now, initiated_by=initiated_by, llm_reasoning=llm_reasoning
-    )
+    world = WorldState(session, now=now, initiated_by=initiated_by, llm_reasoning=llm_reasoning)
 
     # ----- 1. Validate -----
     validation = action.validate(params, world, actor_id)

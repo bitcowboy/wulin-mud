@@ -8,7 +8,7 @@ audited via the ActionRecord.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 from wulin_mud.actions._helpers import actor_location_id, ensure_player
 from wulin_mud.actions.base import (
@@ -27,7 +27,7 @@ from wulin_mud.world.state import WorldState
 class MoveTo(ActionType):
     name = "MoveTo"
     description = "走到相邻的位置。"
-    callable_by = {CallerType.PLAYER, CallerType.NPC}
+    callable_by: ClassVar[set[CallerType]] = {CallerType.PLAYER, CallerType.NPC}
 
     def validate(
         self,
@@ -61,8 +61,7 @@ class MoveTo(ActionType):
         if destination_id not in current.connected_to:
             return ValidationResult(
                 ok=False,
-                reason=f"destination {destination_id!r} is not connected to "
-                f"{current_loc_id!r}",
+                reason=f"destination {destination_id!r} is not connected to {current_loc_id!r}",
             )
 
         return ValidationResult(ok=True)

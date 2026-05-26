@@ -117,9 +117,7 @@ class WorldState:
     def save_npc(self, npc: NPC) -> None:
         save_npc(self._session, npc)
 
-    def npcs_at_location(
-        self, location_id: str, *, exclude: Iterable[str] = ()
-    ) -> list[NPC]:
+    def npcs_at_location(self, location_id: str, *, exclude: Iterable[str] = ()) -> list[NPC]:
         """Return every NPC currently at `location_id`, freshly loaded.
 
         Used by witness resolution (SAME_LOCATION).

@@ -6,7 +6,7 @@ the "does the framework work end-to-end?" smoke test.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 from wulin_mud.actions._helpers import (
     actor_location_id,
@@ -27,14 +27,13 @@ from wulin_mud.core.enums import EventType
 from wulin_mud.ontology import PLAYER_ID
 from wulin_mud.world.state import WorldState
 
-
 _FAMILIARITY_INCREMENT = 0.05
 
 
 class Greet(ActionType):
     name = "Greet"
     description = "打个招呼。建立或加深 familiarity。"
-    callable_by = {CallerType.PLAYER, CallerType.NPC}
+    callable_by: ClassVar[set[CallerType]] = {CallerType.PLAYER, CallerType.NPC}
 
     def validate(
         self,
@@ -119,9 +118,7 @@ class Greet(ActionType):
         world.save_npc(target)
 
         # 2) Generate witness memories.
-        witnesses = world.witnesses_for(
-            WitnessesRule.SAME_LOCATION, location_id=location_id
-        )
+        witnesses = world.witnesses_for(WitnessesRule.SAME_LOCATION, location_id=location_id)
         memory_ids = world.record_witnessed_event(
             witnesses=witnesses,
             event_type=EventType.MET,

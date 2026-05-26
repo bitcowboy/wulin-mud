@@ -12,7 +12,7 @@ Validation enforces:
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 from wulin_mud.actions._helpers import actor_location_id, ensure_player
 from wulin_mud.actions.base import (
@@ -32,7 +32,7 @@ from wulin_mud.world.state import WorldState
 class BuyItem(ActionType):
     name = "BuyItem"
     description = "购买一件物品。需要给出价格。"
-    callable_by = {CallerType.PLAYER, CallerType.NPC}
+    callable_by: ClassVar[set[CallerType]] = {CallerType.PLAYER, CallerType.NPC}
 
     def validate(
         self,
@@ -60,9 +60,7 @@ class BuyItem(ActionType):
 
         owner = world.get_npc(item.owner_id)
         if owner is None:
-            return ValidationResult(
-                ok=False, reason=f"item owner {item.owner_id!r} is not an NPC"
-            )
+            return ValidationResult(ok=False, reason=f"item owner {item.owner_id!r} is not an NPC")
 
         try:
             actor_loc = actor_location_id(world, actor_id)
@@ -194,9 +192,7 @@ class BuyItem(ActionType):
         )
 
         # 4) Witness memories.
-        witnesses = world.witnesses_for(
-            WitnessesRule.SAME_LOCATION, location_id=location_id
-        )
+        witnesses = world.witnesses_for(WitnessesRule.SAME_LOCATION, location_id=location_id)
         memory_ids = world.record_witnessed_event(
             witnesses=witnesses,
             event_type=EventType.BOUGHT,

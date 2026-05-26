@@ -7,7 +7,7 @@ weigh ``pride`` and ``agreeableness`` against the offense).
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 from wulin_mud.actions._helpers import (
     actor_location_id,
@@ -28,7 +28,6 @@ from wulin_mud.core.enums import EventType
 from wulin_mud.ontology import PLAYER_ID
 from wulin_mud.world.state import WorldState
 
-
 _AFFECTION_DROP = 0.15
 _MOOD_VALENCE_DROP = 0.1
 
@@ -36,7 +35,7 @@ _MOOD_VALENCE_DROP = 0.1
 class OffendNPC(ActionType):
     name = "OffendNPC"
     description = "言语或行为冒犯。降低 affection 与 mood.valence。"
-    callable_by = {CallerType.PLAYER, CallerType.NPC}
+    callable_by: ClassVar[set[CallerType]] = {CallerType.PLAYER, CallerType.NPC}
 
     def validate(
         self,
@@ -140,9 +139,7 @@ class OffendNPC(ActionType):
         # 3) Witness memories. The target's own memory carries a strong
         #    negative emotional_charge baseline — the LLM may refine it
         #    later but the raw charge is unambiguous.
-        witnesses = world.witnesses_for(
-            WitnessesRule.SAME_LOCATION, location_id=location_id
-        )
+        witnesses = world.witnesses_for(WitnessesRule.SAME_LOCATION, location_id=location_id)
         raw_facts: dict[str, Any] = {"offender": actor_id, "target": target_id}
         if description:
             raw_facts["description"] = description

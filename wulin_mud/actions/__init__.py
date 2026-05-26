@@ -5,6 +5,8 @@ into ACTION_REGISTRY, so that `execute_action(action_name=..., ...)`
 can resolve them by name.
 """
 
+# Side-effect imports: each module registers its Action into ACTION_REGISTRY.
+from wulin_mud.actions import buy_item, greet, move_to, offend_npc  # noqa: F401
 from wulin_mud.actions.base import (
     ACTION_REGISTRY,
     ActionResult,
@@ -20,9 +22,6 @@ from wulin_mud.actions.executor import (
     ActionNotFound,
     execute_action,
 )
-
-# Side-effect imports: each module registers its Action into ACTION_REGISTRY.
-from wulin_mud.actions import buy_item, greet, move_to, offend_npc  # noqa: F401
 
 __all__ = [
     "ACTION_REGISTRY",

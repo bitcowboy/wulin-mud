@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from wulin_mud.core.enums import CallerType, WitnessesRule
 
@@ -78,9 +78,9 @@ class ActionType(ABC):
     See docs/architecture.md section 3.
     """
 
-    name: str
-    description: str
-    callable_by: set[CallerType]
+    name: ClassVar[str]
+    description: ClassVar[str]
+    callable_by: ClassVar[set[CallerType]]
 
     @abstractmethod
     def validate(
