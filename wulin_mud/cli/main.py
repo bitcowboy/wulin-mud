@@ -74,7 +74,11 @@ def _read_line() -> str:
 
 def main() -> None:
     """Entry point. Bridges from blocking ``__main__`` into the async REPL."""
-    load_dotenv()
+    # override=True: the project's .env wins over OS-wide env vars.
+    # Users typically already have OPENAI_API_KEY set globally; this project
+    # treats its own .env as the source of truth so per-project config
+    # behaves like config (not like "first one wins").
+    load_dotenv(override=True)
     _banner()
 
     engine = get_engine()
