@@ -24,20 +24,36 @@ _JUDGE_TEMPERATURE = 0.1
 _JUDGE_MAX_TOKENS = 300
 
 _JUDGE_SYSTEM_PROMPT = """\
-你是一个 NPC 对白评分员。你要根据给定的人设和评分标准，
-判断一段 NPC 的回复符合得多好。
+You are a Chinese-NPC dialogue grader. You will read a reply and a
+rubric, and you must output EXACTLY ONE JSON object — nothing else.
 
-输出只有一个 JSON 对象，**两个字段**：
-  - "score": 1 到 5 的整数
-      1 = 完全偏离设定
-      2 = 大体偏离，零星地有一点点像
-      3 = 一半像一半不像
-      4 = 大体符合，偶有违和
-      5 = 完全符合，挑不出毛病
-  - "reasoning": 一两句话解释你为什么给这个分
+The JSON object has exactly two keys:
+  - "score": an integer from 1 to 5 (no decimals, no text)
+      1 = totally off-character
+      2 = mostly off, a few traces of the persona
+      3 = half on, half off
+      4 = mostly in character, minor slips
+      5 = fully in character, no notes
+  - "reasoning": a short Chinese string explaining your score
 
-不要写解释、不要写代码块、不要写多余的字段。
-直接输出 JSON。"""
+CRITICAL FORMATTING RULES:
+- Output ONLY the JSON object. No prose before it. No prose after it.
+- No markdown code fences (no ```json, no ```).
+- Use ASCII double quotes, not Chinese 「」 or 「" "」 brackets.
+- Inside "reasoning", do NOT include unescaped double quotes. If you
+  need to quote a phrase from the reply, use Chinese 「」 instead.
+
+Example of valid output:
+{"score": 4, "reasoning": "回复务实简短，符合设定"}
+
+Example of INVALID output (do not do this):
+```json
+{"score": 4, "reasoning": "回复务实"}
+```
+
+Example of INVALID output (do not do this either):
+Here is my grade:
+{"score": 4, "reasoning": "..."}"""
 
 
 @dataclass(frozen=True)
@@ -66,28 +82,76 @@ def _build_judge_user(
 def _parse_judge_output(text: str) -> JudgeReply:
     """Extract {score, reasoning} from the LLM's output, defensively.
 
-    Some models wrap JSON in ```json ... ``` or prepend a sentence.
-    We extract the first balanced {...} object we can find.
+    Tries multiple strategies in order:
+
+    1. Direct ``json.loads`` on the whole output.
+    2. Strip fenced code blocks (``` … ```) and parse the inside.
+    3. Find the first balanced {…} block via regex and parse that.
+    4. Last resort — regex-extract just ``"score": N`` from anywhere
+       in the text. This rescues cases where the LLM produced
+       valid-looking grading but invalid JSON (unescaped quotes,
+       Chinese full-width punctuation, trailing comments).
+
+    Strategy 4 marks the reasoning as "(extracted from non-JSON)" so
+    you can tell the difference in reports.
     """
     raw = text.strip()
-    # Strip fenced code blocks if present.
+    candidates: list[str] = [raw]
+
     fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw, re.DOTALL)
     if fenced:
-        candidate = fenced.group(1)
-    else:
-        match = re.search(r"\{.*\}", raw, re.DOTALL)
-        candidate = match.group(0) if match else raw
+        candidates.append(fenced.group(1))
 
-    try:
-        obj = json.loads(candidate)
-        score = int(obj.get("score", 0))
+    bare = re.search(r"\{.*\}", raw, re.DOTALL)
+    if bare:
+        candidates.append(bare.group(0))
+
+    for candidate in candidates:
+        try:
+            obj = json.loads(candidate)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            continue
+        if not isinstance(obj, dict):
+            continue
+        try:
+            score = int(obj.get("score", 0))
+        except (TypeError, ValueError):
+            continue
         if not (1 <= score <= 5):
-            score = 0
+            continue
         reasoning = str(obj.get("reasoning", "")).strip()
-    except (json.JSONDecodeError, TypeError, ValueError):
-        score = 0
-        reasoning = "judge output was not valid JSON"
-    return JudgeReply(score=score, reasoning=reasoning, raw=raw)
+        return JudgeReply(score=score, reasoning=reasoning, raw=raw)
+
+    # Last resort: pull the integer out of "score": N anywhere in the text.
+    # Accepts Chinese full-width colon "：" and either quote style.
+    fallback = re.search(
+        r'["“]?score["”]?\s*[:：=]\s*(\d+)',
+        raw,
+    )
+    if fallback:
+        try:
+            score = int(fallback.group(1))
+            if 1 <= score <= 5:
+                # Try to also pull a reasoning string nearby — best effort.
+                reasoning_match = re.search(
+                    r'["“]?reasoning["”]?\s*[:：=]\s*["“]?(.+?)["”]?\s*[,}\n]',
+                    raw,
+                    re.DOTALL,
+                )
+                reasoning = (
+                    reasoning_match.group(1).strip()
+                    if reasoning_match
+                    else "(extracted from non-JSON)"
+                )
+                return JudgeReply(score=score, reasoning=reasoning, raw=raw)
+        except ValueError:
+            pass
+
+    return JudgeReply(
+        score=0,
+        reasoning="judge output was not valid JSON",
+        raw=raw,
+    )
 
 
 async def evaluate_soft(

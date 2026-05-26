@@ -51,6 +51,55 @@ def test_unparseable_output_becomes_zero() -> None:
     assert "not valid JSON" in r.reasoning
 
 
+def test_extracts_score_from_non_json_prose() -> None:
+    """Last-resort path: judge gave a natural-language reply but
+    included `"score": N` somewhere. We pull the number out so a
+    formatting flake doesn't get marked as 0/5."""
+    text = '抱歉我不能输出 JSON，但根据评分标准我会给 "score": 4。'
+    r = _parse_judge_output(text)
+    assert r.score == 4
+
+
+def test_extracts_score_with_chinese_punctuation() -> None:
+    """Some models use 中文：instead of ASCII colon."""
+    text = "评分如下：score：5，理由：完全符合设定。"
+    r = _parse_judge_output(text)
+    assert r.score == 5
+
+
+def test_handles_unescaped_quote_in_reasoning() -> None:
+    """The judge wrote unescaped " inside reasoning, breaking JSON.
+    Fallback should still recover the score."""
+    text = '{"score": 4, "reasoning": "回复 "符合设定" 没问题"}'
+    r = _parse_judge_output(text)
+    assert r.score == 4
+
+
+def test_handles_trailing_text_after_json() -> None:
+    """The judge appended extra prose after the JSON. Bare-regex
+    extraction handles this."""
+    text = '{"score": 5, "reasoning": "完美"}\n\n顺便说一句，这条评分很合理。'
+    r = _parse_judge_output(text)
+    assert r.score == 5
+
+
+def test_handles_object_with_decimal_score() -> None:
+    """A decimal like 4.5 should fall through (we want integers 1-5).
+    Fallback regex `(\\d+)` would still match '4', so result is 4."""
+    text = '{"score": 4.5, "reasoning": "borderline"}'
+    r = _parse_judge_output(text)
+    # int(4.5) raises in earlier strict path; fallback regex finds 4.
+    # Either way: we get a usable integer rather than a hard 0.
+    assert r.score == 4
+
+
+def test_handles_object_score_out_of_range_with_fallback_int() -> None:
+    """Even with fallback regex, scores outside 1-5 stay 0."""
+    text = '{"score": 99, "reasoning": "over the top"}'
+    r = _parse_judge_output(text)
+    assert r.score == 0
+
+
 # ---------------------------------------------------------------------------
 # evaluate_soft
 # ---------------------------------------------------------------------------
