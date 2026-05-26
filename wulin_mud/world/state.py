@@ -452,11 +452,20 @@ class WorldState:
                         importance=base_importance,
                         tags=tags_list,
                     )
+                    # Recent reads of THIS actor — keeps interpretations
+                    # consistent across events (a recently-offended NPC
+                    # won't read the next interaction as friendly).
+                    recent_context = [
+                        m
+                        for m in self.retrieve_relevant_memories(witness_id, top_n=5)
+                        if actor_id in m.participants
+                    ][:3]
                     interpretation = await generate_interpretation(
                         provider=self._llm,
                         npc=witness_npc,
                         memory=draft,
                         actor_id=actor_id,
+                        recent_context=recent_context,
                     )
 
             mem = Memory(

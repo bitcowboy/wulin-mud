@@ -28,13 +28,14 @@ from wulin_mud.core.enums import EventType
 from wulin_mud.ontology import PLAYER_ID
 from wulin_mud.world.state import WorldState
 
-_AFFECTION_DROP = 0.15
-_MOOD_VALENCE_DROP = 0.1
+_AFFECTION_DROP = 0.30
+_TRUST_DROP = 0.10
+_MOOD_VALENCE_DROP = 0.20
 
 
 class OffendNPC(ActionType):
     name = "OffendNPC"
-    description = "言语或行为冒犯。降低 affection 与 mood.valence。"
+    description = "言语或行为冒犯。降低 affection、trust、mood.valence。"
     callable_by: ClassVar[set[CallerType]] = {CallerType.PLAYER, CallerType.NPC}
 
     def validate(
@@ -74,7 +75,9 @@ class OffendNPC(ActionType):
         return SideEffectManifest(
             mutates_fields=[
                 "NPC.relationships.affection",
+                "NPC.relationships.trust",
                 "NPC.player_relationship.affection",
+                "NPC.player_relationship.trust",
                 "NPC.mood.valence",
             ],
             witnesses_rule=WitnessesRule.SAME_LOCATION,
@@ -94,11 +97,14 @@ class OffendNPC(ActionType):
 
         side_effects: list[dict[str, Any]] = []
 
-        # 1) Affection on the target's side toward actor.
+        # 1) Affection AND trust drop on the target's side toward actor.
         if actor_id == PLAYER_ID:
             pr = ensure_player_relationship(target, first_met_at=world.now)
             new_aff = clamp(pr.affection - _AFFECTION_DROP, low=-1.0, high=1.0)
-            target.player_relationship = pr.model_copy(update={"affection": new_aff})
+            new_trust = clamp(pr.trust - _TRUST_DROP, low=0.0, high=1.0)
+            target.player_relationship = pr.model_copy(
+                update={"affection": new_aff, "trust": new_trust}
+            )
             side_effects.append(
                 {
                     "field": "NPC.player_relationship.affection",
@@ -107,10 +113,21 @@ class OffendNPC(ActionType):
                     "to": new_aff,
                 }
             )
+            side_effects.append(
+                {
+                    "field": "NPC.player_relationship.trust",
+                    "npc_id": target_id,
+                    "from": pr.trust,
+                    "to": new_trust,
+                }
+            )
         else:
             rel = ensure_relationship(target, actor_id)
             new_aff = clamp(rel.affection - _AFFECTION_DROP, low=-1.0, high=1.0)
-            target.relationships[actor_id] = rel.model_copy(update={"affection": new_aff})
+            new_trust = clamp(rel.trust - _TRUST_DROP, low=0.0, high=1.0)
+            target.relationships[actor_id] = rel.model_copy(
+                update={"affection": new_aff, "trust": new_trust}
+            )
             side_effects.append(
                 {
                     "field": "NPC.relationships.affection",
@@ -118,6 +135,15 @@ class OffendNPC(ActionType):
                     "other_id": actor_id,
                     "from": rel.affection,
                     "to": new_aff,
+                }
+            )
+            side_effects.append(
+                {
+                    "field": "NPC.relationships.trust",
+                    "npc_id": target_id,
+                    "other_id": actor_id,
+                    "from": rel.trust,
+                    "to": new_trust,
                 }
             )
 

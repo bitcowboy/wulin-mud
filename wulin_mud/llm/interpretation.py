@@ -9,6 +9,7 @@ the rest of the system never sees the prompt strings.
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 
 from wulin_mud.llm.prompts.interpretation import build_interpretation_prompt
 from wulin_mud.llm.provider import LLMProvider
@@ -28,11 +29,18 @@ async def generate_interpretation(
     npc: NPC,
     memory: Memory,
     actor_id: str,
+    recent_context: Sequence[Memory] = (),
     model: str | None = None,
     temperature: float = _DEFAULT_TEMPERATURE,
     max_tokens: int = _DEFAULT_MAX_TOKENS,
 ) -> str:
     """Generate the NPC's first-person reading of ``memory``.
+
+    ``recent_context`` is a small set of prior memories this NPC holds
+    about the same actor — used to keep readings consistent across
+    events (a recently-offended NPC won't read the next exchange as
+    friendly). Caller (typically ``WorldState.record_witnessed_event``)
+    is responsible for selecting them.
 
     Returns a single short string ready to be assigned to
     ``memory.interpretation``. Caller is responsible for the actual
@@ -43,7 +51,9 @@ async def generate_interpretation(
     caller doesn't override (provider may still apply its own default
     if env var is unset).
     """
-    prompt = build_interpretation_prompt(npc=npc, memory=memory, actor_id=actor_id)
+    prompt = build_interpretation_prompt(
+        npc=npc, memory=memory, actor_id=actor_id, recent_context=recent_context
+    )
     chosen_model = model if model is not None else os.environ.get("WULIN_MODEL_MEMORY")
     raw = await provider.generate(
         system=prompt.system,

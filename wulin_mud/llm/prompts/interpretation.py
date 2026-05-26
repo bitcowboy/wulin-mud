@@ -12,6 +12,7 @@ header so that retrieval-aware future prompts can subset cleanly.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import NamedTuple
 
 from wulin_mud.ontology import NPC, Memory
@@ -89,11 +90,32 @@ def _format_raw_facts(facts: dict[str, object]) -> str:
     return "\n".join(lines)
 
 
+def _format_recent_context(memories: Sequence[Memory]) -> str:
+    """Render recent memories of this NPC about the same actor.
+
+    Without this, each new event is interpreted in isolation — leading
+    to "she got offended five minutes ago but reads the next exchange
+    as friendly" drift. Passing the witness's recent reads of the same
+    party lets the LLM stay grounded in the unfolding relationship.
+
+    Memories with empty interpretation are skipped (they're typically
+    legacy or in-flight rows; not useful for grounding).
+    """
+    rendered = [m for m in memories if m.interpretation.strip()]
+    if not rendered:
+        return "（你最近没有什么关于他的印象。）"
+    lines = []
+    for m in rendered:
+        lines.append(f"- [{m.event_type.value}] {m.interpretation.strip()}")
+    return "\n".join(lines)
+
+
 def build_interpretation_prompt(
     *,
     npc: NPC,
     memory: Memory,
     actor_id: str,
+    recent_context: Sequence[Memory] = (),
 ) -> InterpretationPrompt:
     """Compose the (system, user) prompt pair for one witness's interpretation.
 
@@ -101,6 +123,9 @@ def build_interpretation_prompt(
     ``memory`` carries the objective layer (event_type, raw_facts, etc.).
     ``actor_id`` is the prime mover of the event (so we can show the
     NPC's view of that specific party).
+    ``recent_context`` is up to a few prior memories the witness holds
+    about the actor — used to keep interpretations from drifting across
+    events (see :func:`_format_recent_context`).
     """
     user_sections = [
         f"【你是谁】\n你的名字：{npc.name}，{npc.age} 岁，{npc.role}\n",
@@ -109,6 +134,7 @@ def build_interpretation_prompt(
         f"【你的说话风格】\n{_format_speech_style(npc)}\n",
         (f"【你此刻的心情】\nvalence={npc.mood.valence:+.2f}  arousal={npc.mood.arousal:.2f}\n"),
         f"【你和对方的当前关系】\n{_format_relationship_with_actor(npc, actor_id)}\n",
+        f"【你最近对他的印象（重要性排序）】\n{_format_recent_context(recent_context)}\n",
         (
             "【刚刚发生了什么（客观事实）】\n"
             f"event_type: {memory.event_type.value}\n"
@@ -120,6 +146,7 @@ def build_interpretation_prompt(
             "【请输出】\n"
             "一两句你此刻对这件事的内心印象。第一人称。"
             "不要解释、不要分析、不要加引号。只写那一句话。"
+            "如果你最近被这个人冒犯/伤害/欺骗过，你的读法应当带上那份心情。"
         ),
     ]
     return InterpretationPrompt(system=_SYSTEM_PROMPT, user="\n".join(user_sections))

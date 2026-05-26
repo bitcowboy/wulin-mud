@@ -103,16 +103,50 @@ def _format_heard_rumors(npc: NPC) -> str:
     )
 
 
+def _affection_narrative(affection: float) -> str:
+    """Translate a numeric affection score into a felt sentence.
+
+    LLMs underweight raw numbers in long prompts; this restates the
+    same signal as a short narrative line that's hard to ignore.
+    """
+    if affection <= -0.5:
+        return "你打心眼里厌恶他，恨不得他赶紧从你眼前消失。"
+    if affection <= -0.2:
+        return "你心里对他还存着芥蒂，没那么容易给他好脸色。"
+    if affection <= -0.05:
+        return "你对他有点儿不爽。"
+    if affection >= 0.5:
+        return "你打心眼里愿意帮他。"
+    if affection >= 0.2:
+        return "你对他有几分善意。"
+    return ""
+
+
+def _trust_narrative(trust: float) -> str:
+    if trust <= 0.1:
+        return "你不太信他的话——他说什么你都要先掂量掂量。"
+    if trust >= 0.7:
+        return "他的话你信得过。"
+    return ""
+
+
 def _format_player_relationship(npc: NPC) -> str:
     pr = npc.player_relationship
     if pr is None:
         return "对方是个新面孔，你之前没见过他。"
-    return (
-        f"affection={pr.affection:+.2f}  trust={pr.trust:.2f}  "
-        f"familiarity={pr.familiarity:.2f}\n"
-        f"你给他贴的标签：{pr.relationship_label or '陌生'}\n"
-        f"你之前对他的总印象：{pr.impression_summary or '（还没形成总印象）'}"
-    )
+    narrative_pieces = [
+        _affection_narrative(pr.affection),
+        _trust_narrative(pr.trust),
+    ]
+    narrative = " ".join(p for p in narrative_pieces if p)
+    lines = [
+        f"affection={pr.affection:+.2f}  trust={pr.trust:.2f}  familiarity={pr.familiarity:.2f}",
+    ]
+    if narrative:
+        lines.append(narrative)
+    lines.append(f"你给他贴的标签：{pr.relationship_label or '陌生'}")
+    lines.append(f"你之前对他的总印象：{pr.impression_summary or '（还没形成总印象）'}")
+    return "\n".join(lines)
 
 
 def _format_memory_row(mem: Memory) -> str:
