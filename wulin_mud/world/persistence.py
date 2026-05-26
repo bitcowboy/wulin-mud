@@ -38,7 +38,6 @@ from wulin_mud.ontology import (
     Rumor,
 )
 
-
 # ---------------------------------------------------------------------------
 # Row models
 # ---------------------------------------------------------------------------
@@ -177,9 +176,7 @@ class ActionRecordRow(SQLModel, table=True):
     parameters: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
 
     succeeded: bool
-    side_effects_applied: list[dict[str, Any]] = Field(
-        default_factory=list, sa_column=Column(JSON)
-    )
+    side_effects_applied: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
     memories_generated: list[str] = Field(default_factory=list, sa_column=Column(JSON))
 
     initiated_by: str
@@ -286,8 +283,11 @@ def npc_to_row(npc: NPC) -> NpcRow:
     )
 
 
-def row_to_npc(row: NpcRow, relationships: dict[str, Relationship] | None = None,
-               player_relationship: PlayerRelationship | None = None) -> NPC:
+def row_to_npc(
+    row: NpcRow,
+    relationships: dict[str, Relationship] | None = None,
+    player_relationship: PlayerRelationship | None = None,
+) -> NPC:
     return NPC.model_validate(
         {
             "id": row.id,
@@ -547,8 +547,8 @@ def save_npc(session: Session, npc: NPC) -> None:
     for other_id, rel in npc.relationships.items():
         # The rel.other_id field is the source of truth, but for robustness
         # we accept either the dict key or the field if they disagree.
-        rel_for_storage = rel if rel.other_id == other_id else rel.model_copy(
-            update={"other_id": other_id}
+        rel_for_storage = (
+            rel if rel.other_id == other_id else rel.model_copy(update={"other_id": other_id})
         )
         session.merge(relationship_to_row(npc.id, rel_for_storage))
     if npc.player_relationship is not None:
@@ -574,8 +574,8 @@ def list_npc_ids(session: Session) -> list[str]:
 
 
 __all__ = [
-    "ActionRecordRow",
     "DEFAULT_DB_URL",
+    "ActionRecordRow",
     "ItemRow",
     "LocationRow",
     "MemoryRow",

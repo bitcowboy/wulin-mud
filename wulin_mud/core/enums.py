@@ -7,10 +7,10 @@ draw their values from these enums, not from ad-hoc string literals.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class CallerType(str, Enum):
+class CallerType(StrEnum):
     """Who is permitted to invoke an action.
 
     Re-exported from wulin_mud.actions.base for backwards compatibility.
@@ -21,7 +21,7 @@ class CallerType(str, Enum):
     SYSTEM = "system"
 
 
-class Gender(str, Enum):
+class Gender(StrEnum):
     """NPC biological gender (used only for narrative grounding)."""
 
     MALE = "male"
@@ -29,7 +29,7 @@ class Gender(str, Enum):
     OTHER = "other"
 
 
-class EventType(str, Enum):
+class EventType(StrEnum):
     """Classification of what happened in an event/memory.
 
     Kept deliberately small in v0.1. New values are added as new Actions
@@ -55,7 +55,7 @@ class EventType(str, Enum):
     OBSERVED = "observed"
 
 
-class LocationType(str, Enum):
+class LocationType(StrEnum):
     """Types of in-world locations.
 
     Values cover the v0.1 Qinghe-town locations (see docs/world-setting.md).
@@ -76,7 +76,7 @@ class LocationType(str, Enum):
     OTHER = "other"
 
 
-class ItemType(str, Enum):
+class ItemType(StrEnum):
     """Types of items players or NPCs can own."""
 
     MEDICINE = "medicine"
@@ -90,7 +90,7 @@ class ItemType(str, Enum):
     OTHER = "other"
 
 
-class RelationshipType(str, Enum):
+class RelationshipType(StrEnum):
     """Broad category of an NPC↔NPC relationship.
 
     Values are the Chinese labels used by the spec (docs/ontology.md §2.4)
@@ -108,7 +108,7 @@ class RelationshipType(str, Enum):
     STRANGER = "陌生人"
 
 
-class InitiatedBy(str, Enum):
+class InitiatedBy(StrEnum):
     """Who/what initiated an action (ActionRecord.initiated_by)."""
 
     PLAYER_INPUT = "player_input"
@@ -116,7 +116,7 @@ class InitiatedBy(str, Enum):
     LLM_DECISION = "llm_decision"
 
 
-class WitnessesRule(str, Enum):
+class WitnessesRule(StrEnum):
     """How an Action's witness set is computed.
 
     See docs/action-types.md §5.2.

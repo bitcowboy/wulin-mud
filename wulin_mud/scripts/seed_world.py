@@ -33,7 +33,6 @@ from sqlmodel import Session
 from wulin_mud.ontology import NPC
 from wulin_mud.world.persistence import get_engine, init_db, save_npc
 
-
 SEED_NPCS_DIR = Path(__file__).resolve().parents[1] / "world" / "seed_data" / "npcs"
 
 
@@ -168,8 +167,7 @@ def check_relationship_symmetry(npcs: Sequence[NPC]) -> None:
 
     if missing:
         raise RelationshipSymmetryError(
-            "Relationship graph is not bidirectionally consistent:\n"
-            + "\n".join(missing)
+            "Relationship graph is not bidirectionally consistent:\n" + "\n".join(missing)
         )
 
 

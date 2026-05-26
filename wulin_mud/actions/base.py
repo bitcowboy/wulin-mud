@@ -19,7 +19,8 @@ from typing import TYPE_CHECKING, Any
 from wulin_mud.core.enums import CallerType
 
 if TYPE_CHECKING:
-    from wulin_mud.world.state import WorldState
+    # Forward reference: wulin_mud.world.state is added in a later sprint.
+    from wulin_mud.world.state import WorldState  # type: ignore[import-not-found]
 
 __all__ = [
     "ACTION_REGISTRY",
@@ -84,7 +85,7 @@ class ActionType(ABC):
     def validate(
         self,
         params: dict[str, Any],
-        world: "WorldState",
+        world: WorldState,
         actor_id: str,
     ) -> ValidationResult:
         """Check pre-conditions. Return reason if invalid."""
@@ -97,7 +98,7 @@ class ActionType(ABC):
     async def execute(
         self,
         params: dict[str, Any],
-        world: "WorldState",
+        world: WorldState,
         actor_id: str,
     ) -> ActionResult:
         """Apply side effects, generate memories, return result."""
